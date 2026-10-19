@@ -9,8 +9,11 @@ import re
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
-with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-    config = json.load(f)
+if os.path.exists(CONFIG_PATH):
+    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+        config = json.load(f)
+else:
+    config = {}
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", config.get("gemini_api_key", ""))
 ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", config.get("elevenlabs_api_key", ""))
