@@ -137,14 +137,11 @@ def call_gemini(message, history, user_name, is_creator, emotion, image_data=Non
 
     last_error = None
     for model_name in models:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
         req = urllib.request.Request(
             url,
             data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Content-Type": "application/json",
-                "X-goog-api-key": GEMINI_API_KEY
-            }
+            headers={"Content-Type": "application/json"}
         )
         try:
             with urllib.request.urlopen(req, timeout=25) as resp:
