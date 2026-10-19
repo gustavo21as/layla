@@ -1,0 +1,3 @@
+# Layla AI - dependencias Python
+# No usa librerías externas, solo stdlib
+# Railway necesita este archivo aunque esté vacío de deps externas

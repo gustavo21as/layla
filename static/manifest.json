@@ -1,0 +1,26 @@
+{
+  "name": "Layla AI",
+  "short_name": "Layla",
+  "description": "Tu asistente de inteligencia artificial personal con voz, visión y personalidad.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050a14",
+  "theme_color": "#00d2ff",
+  "orientation": "portrait-primary",
+  "lang": "es",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
