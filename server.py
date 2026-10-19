@@ -97,7 +97,7 @@ REGLAS DE ORO DE COMUNICACIÓN:
 """
 
 def call_gemini(message, history, user_name, is_creator, emotion, image_data=None, image_mime="image/jpeg"):
-    models = ["gemini-3-flash-preview", "gemini-3.1-flash-lite-preview", "gemini-flash-latest"]
+    models = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.0-pro"]
     
     contents = []
     for item in history[-8:]:
