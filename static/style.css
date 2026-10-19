@@ -1293,3 +1293,148 @@ body {
   display: block;
   border: 1px solid var(--border-light);
 }
+
+/* =====================================================
+   MOBILE FULL FIX - CEL OPTIMIZADO
+   ===================================================== */
+@media (max-width: 480px) {
+
+  /* App entera ocupa toda la pantalla */
+  body { overflow: hidden; height: 100dvh; }
+  .app-shell { height: 100dvh; }
+
+  /* Sidebar oculto por defecto */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 100dvh;
+    width: 80vw;
+    transform: translateX(-100%);
+    z-index: 999;
+  }
+  .sidebar.mobile-open { transform: translateX(0); }
+
+  /* Chat principal ocupa todo */
+  .chat-main {
+    width: 100vw;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Top bar compacta */
+  .top-bar {
+    height: 52px;
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+
+  /* Pills de emoción: scroll horizontal, botones grandes */
+  .emotion-pills {
+    max-width: 55vw;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 4px;
+    padding: 3px;
+  }
+  .emotion-pills::-webkit-scrollbar { display: none; }
+
+  .pill-emotion {
+    font-size: 11px;
+    padding: 6px 10px;
+    white-space: nowrap;
+    min-height: 32px;
+    touch-action: manipulation;
+  }
+
+  /* Ocultar botones que no caben */
+  .wave-toggle-btn .wave-label { display: none; }
+  .wave-toggle-btn { padding: 6px 8px; }
+
+  /* Chat stream */
+  .chat-stream {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+  }
+
+  .messages-feed {
+    padding: 16px 12px 24px;
+    gap: 16px;
+  }
+
+  /* Burbujas más anchas en móvil */
+  .user-bubble { max-width: 90%; }
+  .assistant-text { font-size: 14px; }
+
+  /* INPUT BAR — pegada al fondo, botones grandes */
+  .chat-input-wrapper {
+    padding: 6px 8px 10px;
+    flex-shrink: 0;
+  }
+
+  .input-card {
+    padding: 6px 8px;
+    gap: 6px;
+    border-radius: 18px;
+  }
+
+  /* Botones de acción grandes para dedos */
+  .action-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 20px;
+    flex-shrink: 0;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mic-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 18px;
+    flex-shrink: 0;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .send-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 18px;
+    flex-shrink: 0;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Textarea más grande */
+  #userInput {
+    font-size: 16px;
+    min-height: 42px;
+    padding: 10px 4px;
+  }
+
+  .input-note { font-size: 10px; }
+
+  /* Welcome hero más compacto */
+  .hero-welcome { margin-top: 2vh; padding: 0 12px; }
+  .hero-orb { width: 52px; height: 52px; margin-bottom: 12px; }
+  .hero-title { font-size: 20px; }
+  .hero-desc { font-size: 13px; margin-bottom: 20px; }
+
+  .quick-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .quick-card { padding: 10px 12px; }
+  .q-title { font-size: 12px; }
+  .q-sub { font-size: 10px; }
+
+  /* Soundwave bar más compacta */
+  .soundwave-bar { padding: 4px 12px; }
+  #liveWaveCanvas { width: 180px; height: 30px; }
+  .wave-status-text { font-size: 10px; }
+
+  /* Nav buttons */
+  .nav-btn { width: 34px; height: 34px; font-size: 15px; }
+  .btn-auth-header { font-size: 11px; padding: 5px 8px; }
+}
