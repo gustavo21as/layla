@@ -6,6 +6,7 @@ import urllib.request
 import urllib.parse
 import mimetypes
 import re
+import google.generativeai as genai
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
@@ -20,6 +21,9 @@ ELEVENLABS_API_KEY = os.environ.get("ELEVENLABS_API_KEY", config.get("elevenlabs
 ELEVENLABS_VOICE_ID = os.environ.get("ELEVENLABS_VOICE_ID", config.get("elevenlabs_voice_id", "pN4aFdNIp2mvGfTwy1Oj"))
 CREATOR_NAME = os.environ.get("CREATOR_NAME", config.get("creator_name", "Jefe Gerardo"))
 CREATION_DATE = os.environ.get("CREATION_DATE", config.get("creation_date", "18 de octubre de 2026"))
+
+# Inicializar Google Generative AI
+genai.configure(api_key=GEMINI_API_KEY)
 PORT = int(os.environ.get("PORT", config.get("port", 7777)))
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 
@@ -97,73 +101,41 @@ REGLAS DE ORO DE COMUNICACIÓN:
 """
 
 def call_gemini(message, history, user_name, is_creator, emotion, image_data=None, image_mime="image/jpeg"):
-    models = ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash-latest"]
-    
-    contents = []
-    for item in history[-8:]:
-        role = "user" if item.get("role") == "user" else "model"
-        contents.append({
-            "role": role,
-            "parts": [{"text": item.get("text", "")}]
-        })
-    
-    user_parts = [{"text": message or "Por favor analiza esta imagen y ayúdame con ella."}]
-    if image_data:
-        # Strip header if data URI provided
-        if "," in image_data:
-            image_data = image_data.split(",")[1]
-        user_parts.append({
-            "inlineData": {
-                "mimeType": image_mime or "image/jpeg",
-                "data": image_data
-            }
-        })
-
-    contents.append({
-        "role": "user",
-        "parts": user_parts
-    })
-
-    payload = {
-        "systemInstruction": {
-            "parts": [{"text": get_system_instruction(user_name, is_creator, emotion)}]
-        },
-        "contents": contents,
-        "generationConfig": {
-            "temperature": 0.3,
-            "maxOutputTokens": 2048
-        }
-    }
-
-    last_error = None
-    for model_name in models:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={
-                "Content-Type": "application/json",
-                "x-goog-api-key": GEMINI_API_KEY
-            }
+    try:
+        model = genai.GenerativeModel(
+            model_name="gemini-2.0-flash",
+            system_instruction=get_system_instruction(user_name, is_creator, emotion)
         )
-        try:
-            with urllib.request.urlopen(req, timeout=25) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                candidate = data.get("candidates", [{}])[0]
-                parts = candidate.get("content", {}).get("parts", [{}])
-                reply = parts[0].get("text", "He analizado la imagen y estoy lista para ayudarte.")
-                return reply
-        except urllib.error.HTTPError as e:
-            error_body = e.read().decode("utf-8")
-            print(f"Gemini HTTP Error {e.code} for model {model_name}: {error_body}")
-            last_error = Exception(f"HTTP Error {e.code}: {error_body[:200]}")
-            continue
-        except Exception as e:
-            print(f"Gemini Error for model {model_name}: {str(e)}")
-            last_error = e
-            continue
 
-    return f"Error al procesar con Layla: {str(last_error)}"
+        # Construir historial
+        chat_history = []
+        for item in history[-8:]:
+            role = "user" if item.get("role") == "user" else "model"
+            chat_history.append({
+                "role": role,
+                "parts": [item.get("text", "")]
+            })
+
+        chat = model.start_chat(history=chat_history)
+
+        # Construir mensaje con imagen si hay
+        if image_data:
+            if "," in image_data:
+                image_data = image_data.split(",")[1]
+            import base64
+            image_bytes = base64.b64decode(image_data)
+            response = chat.send_message([
+                message or "Analiza esta imagen y ayúdame.",
+                {"mime_type": image_mime or "image/jpeg", "data": image_bytes}
+            ])
+        else:
+            response = chat.send_message(message or "Hola")
+
+        return response.text
+
+    except Exception as e:
+        print(f"Gemini SDK Error: {str(e)}")
+        return f"Error al procesar con Layla: {str(e)}"
 
 def call_elevenlabs_tts(text):
     clean_text = re.sub(r'\[IMAGE_PROMPT:.*?\]', '', text).strip()
