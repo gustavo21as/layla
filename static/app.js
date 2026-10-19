@@ -222,8 +222,10 @@ newChatBtn.addEventListener("click", () => {
   if (window.innerWidth <= 768) sidebar.classList.remove("mobile-open");
 });
 
-// Eliminar conversación actual (limpia pantalla + historial de esa sesión)
-document.getElementById("clearChatBtn").addEventListener("click", () => {
+// Eliminar conversación actual
+const clearChatBtnEl = document.getElementById("clearChatBtn");
+if (clearChatBtnEl) {
+  clearChatBtnEl.addEventListener("click", () => {
   if (conversationHistory.length === 0) return;
   if (!confirm("¿Eliminar esta conversación? No se puede recuperar.")) return;
 
@@ -242,7 +244,8 @@ document.getElementById("clearChatBtn").addEventListener("click", () => {
   heroWelcome.style.display = "flex";
   userInput.value = "";
   if (window.innerWidth <= 768) sidebar.classList.remove("mobile-open");
-});
+  });
+}
 
 function quickAsk(text) {
   userInput.value = text;
