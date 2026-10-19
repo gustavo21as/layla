@@ -1438,3 +1438,34 @@ body {
   .nav-btn { width: 34px; height: 34px; font-size: 15px; }
   .btn-auth-header { font-size: 11px; padding: 5px 8px; }
 }
+
+/* FIX CLICKS MÓVIL - elementos que bloquean toques */
+.aura-glow {
+  pointer-events: none !important;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, a, [onclick] {
+  touch-action: manipulation;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+}
+
+.input-card {
+  position: relative;
+  z-index: 10;
+}
+
+.chat-input-wrapper {
+  position: relative;
+  z-index: 10;
+}
+
+.top-bar {
+  position: relative;
+  z-index: 20;
+}
