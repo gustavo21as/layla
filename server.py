@@ -150,7 +150,13 @@ def call_gemini(message, history, user_name, is_creator, emotion, image_data=Non
                 parts = candidate.get("content", {}).get("parts", [{}])
                 reply = parts[0].get("text", "He analizado la imagen y estoy lista para ayudarte.")
                 return reply
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode("utf-8")
+            print(f"Gemini HTTP Error {e.code} for model {model_name}: {error_body}")
+            last_error = Exception(f"HTTP Error {e.code}: {error_body[:200]}")
+            continue
         except Exception as e:
+            print(f"Gemini Error for model {model_name}: {str(e)}")
             last_error = e
             continue
 
