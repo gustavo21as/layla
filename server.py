@@ -334,9 +334,10 @@ class LaylaHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
 def run_server():
+    PORT = int(os.environ.get("PORT", 7777))
     server_address = ("0.0.0.0", PORT)
     httpd = HTTPServer(server_address, LaylaHandler)
-    print(f"Layla AI 4.1 Multimodal Vision activa en http://0.0.0.0:{PORT}")
+    print(f"Layla AI 4.1 activa en http://0.0.0.0:{PORT}")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
