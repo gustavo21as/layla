@@ -103,7 +103,7 @@ REGLAS DE ORO DE COMUNICACIÓN:
 def call_gemini(message, history, user_name, is_creator, emotion, image_data=None, image_mime="image/jpeg"):
     try:
         model = genai.GenerativeModel(
-            model_name="gemini-3.8-flash",
+            model_name="gemini-3.6-flash",
             system_instruction=get_system_instruction(user_name, is_creator, emotion)
         )
 
