@@ -755,3 +755,422 @@ if (!isSecureContext) {
     alert("El reconocimiento de voz requiere Google Chrome o Microsoft Edge.");
   });
 }
+
+// -------------------------------------------------------
+// MODO VOZ EN VIVO (ESTILO CHATGPT ADVANCED VOICE)
+// -------------------------------------------------------
+const voiceLiveScreen = document.getElementById("voiceLiveScreen");
+const voiceOrb = document.getElementById("voiceOrb");
+const voiceLiveStatus = document.getElementById("voiceLiveStatus");
+const voiceLiveTranscript = document.getElementById("voiceLiveTranscript");
+const voiceLiveClose = document.getElementById("voiceLiveClose");
+const voiceOrbBtn = document.getElementById("voiceOrbBtn");
+const voiceLiveMute = document.getElementById("voiceLiveMute");
+
+let voiceRecognition = null;
+let isVoiceLiveActive = false;
+let isVoiceMuted = false;
+
+// Abrir pantalla de voz al tocar el micrófono
+micBtn.removeEventListener("click", micBtn._clickHandler);
+micBtn.addEventListener("click", openVoiceLive);
+
+function openVoiceLive() {
+  voiceLiveScreen.classList.add("active");
+  isVoiceLiveActive = true;
+  voiceLiveTranscript.innerText = "";
+  voiceLiveStatus.innerText = "Toca el botón para hablar";
+  voiceOrb.className = "voice-orb";
+}
+
+// Cerrar pantalla de voz
+voiceLiveClose.addEventListener("click", () => {
+  voiceLiveScreen.classList.remove("active");
+  isVoiceLiveActive = false;
+  if (voiceRecognition) voiceRecognition.stop();
+  voiceOrb.className = "voice-orb";
+  isAudioPlaying = false;
+});
+
+// Botón orbe — iniciar/detener escucha
+voiceOrbBtn.addEventListener("click", async () => {
+  if (!isSecureContext) {
+    alert("Necesitas HTTPS para usar el micrófono en el celular.");
+    return;
+  }
+
+  if (voiceOrbBtn.classList.contains("listening")) {
+    if (voiceRecognition) voiceRecognition.stop();
+    voiceOrbBtn.classList.remove("listening");
+    voiceOrb.className = "voice-orb";
+    voiceLiveStatus.innerText = "Toca para hablar";
+    return;
+  }
+
+  // Pedir permiso
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(t => t.stop());
+  } catch (e) {
+    voiceLiveStatus.innerText = "⚠️ Permite el micrófono";
+    return;
+  }
+
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    voiceLiveStatus.innerText = "⚠️ Usa Chrome para voz";
+    return;
+  }
+
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  voiceRecognition = new SpeechRec();
+  voiceRecognition.lang = "es-PE";
+  voiceRecognition.continuous = false;
+  voiceRecognition.interimResults = true;
+
+  voiceRecognition.onstart = () => {
+    voiceOrbBtn.classList.add("listening");
+    voiceOrb.className = "voice-orb listening";
+    voiceLiveStatus.innerText = "Escuchando...";
+    voiceLiveTranscript.innerText = "";
+  };
+
+  voiceRecognition.onresult = (e) => {
+    let interim = "";
+    let final = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    voiceLiveTranscript.innerText = final || interim;
+  };
+
+  voiceRecognition.onend = async () => {
+    voiceOrbBtn.classList.remove("listening");
+    voiceOrb.className = "voice-orb";
+
+    const transcript = voiceLiveTranscript.innerText.trim();
+    if (!transcript) {
+      voiceLiveStatus.innerText = "No escuché nada. Toca de nuevo.";
+      return;
+    }
+
+    voiceLiveStatus.innerText = "Layla pensando...";
+    voiceOrb.className = "voice-orb";
+
+    // Enviar a Layla
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: transcript,
+          history: conversationHistory,
+          user: currentUser,
+          emotion: currentEmotion,
+          image_data: null,
+          image_mime: null
+        })
+      });
+
+      const data = await res.json();
+      conversationHistory.push({ role: "user", text: transcript });
+      conversationHistory.push({ role: "model", text: data.reply });
+      updateSessionHistory(transcript);
+
+      voiceLiveTranscript.innerText = data.reply;
+      voiceLiveStatus.innerText = "Layla respondiendo...";
+      voiceOrb.className = "voice-orb speaking";
+
+      // Reproducir voz
+      if (!isVoiceMuted) {
+        await playElevenLabsTTS(data.reply);
+      }
+
+      voiceOrb.className = "voice-orb";
+      voiceLiveStatus.innerText = "Toca para hablar";
+
+      // También agregar al chat
+      appendUserMessage(transcript);
+      appendAssistantMessage(data.reply);
+      heroWelcome.style.display = "none";
+
+    } catch (err) {
+      voiceLiveStatus.innerText = "Error: " + err.message;
+      voiceOrb.className = "voice-orb";
+    }
+  };
+
+  voiceRecognition.onerror = (e) => {
+    voiceOrbBtn.classList.remove("listening");
+    voiceOrb.className = "voice-orb";
+    if (e.error === "no-speech") {
+      voiceLiveStatus.innerText = "No escuché nada. Toca de nuevo.";
+    } else {
+      voiceLiveStatus.innerText = "Error: " + e.error;
+    }
+  };
+
+  voiceRecognition.start();
+});
+
+// Mutear/desmutear voz
+voiceLiveMute.addEventListener("click", () => {
+  isVoiceMuted = !isVoiceMuted;
+  voiceLiveMute.innerText = isVoiceMuted ? "🔇" : "🔊";
+  if (isVoiceMuted) {
+    audioPlayer.pause();
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+  }
+});
+
+// -------------------------------------------------------
+// BOTÓN + MENÚ DE ADJUNTOS
+// -------------------------------------------------------
+const attachBtn = document.getElementById("attachBtn");
+const attachMenu = document.getElementById("attachMenu");
+const fileBtn = document.getElementById("fileBtn");
+const fileInput = document.getElementById("fileInput");
+
+attachBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  attachMenu.classList.toggle("open");
+  attachBtn.classList.toggle("open");
+});
+
+document.addEventListener("click", () => {
+  attachMenu.classList.remove("open");
+  attachBtn.classList.remove("open");
+});
+
+attachMenu.addEventListener("click", (e) => e.stopPropagation());
+
+document.getElementById("cameraBtn").addEventListener("click", () => {
+  cameraInput.click();
+  attachMenu.classList.remove("open");
+  attachBtn.classList.remove("open");
+});
+
+document.getElementById("uploadPhotoBtn").addEventListener("click", () => {
+  photoInput.click();
+  attachMenu.classList.remove("open");
+  attachBtn.classList.remove("open");
+});
+
+fileBtn.addEventListener("click", () => {
+  fileInput.click();
+  attachMenu.classList.remove("open");
+  attachBtn.classList.remove("open");
+});
+
+fileInput.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  photoFileName.innerText = file.name;
+  currentPhotoMime = file.type || "application/octet-stream";
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    currentPhotoBase64 = ev.target.result;
+    photoPreviewImg.src = currentPhotoBase64;
+    photoPreviewBox.style.display = "flex";
+  };
+  reader.readAsDataURL(file);
+});
+
+// -------------------------------------------------------
+// MODO VOZ EN VIVO - ORBE ESTILO CHATGPT
+// -------------------------------------------------------
+const voiceLiveScreen = document.getElementById("voiceLiveScreen");
+const voiceOrb = document.getElementById("voiceOrb");
+const voiceOrbBtn = document.getElementById("voiceOrbBtn");
+const voiceLiveClose = document.getElementById("voiceLiveClose");
+const voiceLiveStatus = document.getElementById("voiceLiveStatus");
+const voiceLiveTranscript = document.getElementById("voiceLiveTranscript");
+const voiceLiveMute = document.getElementById("voiceLiveMute");
+
+let voiceIsRecording = false;
+let voiceIsMuted = false;
+let voiceRecognition = null;
+
+// Abrir pantalla de voz al tocar el micrófono
+micBtn.addEventListener("click", () => {
+  voiceLiveScreen.classList.add("active");
+  voiceLiveStatus.innerText = "Toca el micrófono para hablar";
+  voiceLiveTranscript.innerText = "";
+});
+
+// Cerrar pantalla de voz
+voiceLiveClose.addEventListener("click", () => {
+  voiceLiveScreen.classList.remove("active");
+  stopVoiceRecording();
+});
+
+// Botón mute
+voiceLiveMute.addEventListener("click", () => {
+  voiceIsMuted = !voiceIsMuted;
+  voiceLiveMute.innerText = voiceIsMuted ? "🔇" : "🔊";
+  if (voiceIsMuted) audioPlayer.pause();
+});
+
+// Botón orbe — iniciar/detener grabación
+voiceOrbBtn.addEventListener("click", async () => {
+  if (voiceIsRecording) {
+    stopVoiceRecording();
+  } else {
+    startVoiceRecording();
+  }
+});
+
+async function startVoiceRecording() {
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    voiceLiveStatus.innerText = "⚠️ Voz no soportada. Usa Chrome.";
+    return;
+  }
+
+  // Pedir permiso micrófono
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(t => t.stop());
+  } catch (e) {
+    voiceLiveStatus.innerText = "⚠️ Permite el micrófono";
+    return;
+  }
+
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  voiceRecognition = new SpeechRec();
+  voiceRecognition.lang = "es-PE";
+  voiceRecognition.continuous = false;
+  voiceRecognition.interimResults = true;
+
+  voiceRecognition.onstart = () => {
+    voiceIsRecording = true;
+    voiceOrbBtn.classList.add("recording");
+    voiceOrbBtn.querySelector(".orb-btn-icon").innerText = "⏹";
+    voiceOrb.classList.add("speaking");
+    voiceLiveStatus.innerText = "Escuchando...";
+  };
+
+  voiceRecognition.onresult = (e) => {
+    let interim = "";
+    let final = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        final += e.results[i][0].transcript;
+      } else {
+        interim += e.results[i][0].transcript;
+      }
+    }
+    voiceLiveTranscript.innerText = final || interim;
+    if (final) {
+      sendVoiceMessage(final);
+    }
+  };
+
+  voiceRecognition.onerror = (e) => {
+    stopVoiceRecording();
+    if (e.error === "not-allowed") {
+      voiceLiveStatus.innerText = "⚠️ Permiso de micrófono denegado";
+    } else if (e.error === "no-speech") {
+      voiceLiveStatus.innerText = "No escuché nada. Toca de nuevo.";
+    } else {
+      voiceLiveStatus.innerText = `Error: ${e.error}`;
+    }
+  };
+
+  voiceRecognition.onend = () => {
+    stopVoiceRecording();
+  };
+
+  voiceRecognition.start();
+}
+
+function stopVoiceRecording() {
+  voiceIsRecording = false;
+  voiceOrbBtn.classList.remove("recording");
+  voiceOrbBtn.querySelector(".orb-btn-icon").innerText = "🎙️";
+  voiceOrb.classList.remove("speaking");
+  voiceLiveStatus.innerText = "Toca para hablar";
+  if (voiceRecognition) {
+    try { voiceRecognition.stop(); } catch(e) {}
+    voiceRecognition = null;
+  }
+}
+
+async function sendVoiceMessage(text) {
+  voiceLiveStatus.innerText = "Layla pensando...";
+  voiceOrb.classList.add("speaking");
+  voiceLiveTranscript.innerText = text;
+
+  // Cerrar la pantalla de voz y enviar el mensaje al chat
+  heroWelcome.style.display = "none";
+  appendUserMessage(text, null);
+  conversationHistory.push({ role: "user", text });
+
+  const placeholderId = appendThinkingPlaceholder();
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: text,
+        history: conversationHistory,
+        user: currentUser,
+        emotion: currentEmotion
+      })
+    });
+
+    const data = await res.json();
+    removeThinkingPlaceholder(placeholderId);
+    appendAssistantMessage(data.reply, null);
+    conversationHistory.push({ role: "model", text: data.reply });
+    updateSessionHistory(text);
+
+    voiceLiveTranscript.innerText = data.reply;
+    voiceLiveStatus.innerText = "Layla respondió ✓";
+
+    // Reproducir voz de respuesta
+    if (!voiceIsMuted) {
+      playElevenLabsTTS(data.reply);
+      voiceOrb.classList.add("speaking");
+      audioPlayer.onended = () => {
+        voiceOrb.classList.remove("speaking");
+        voiceLiveStatus.innerText = "Toca para hablar";
+      };
+    } else {
+      voiceOrb.classList.remove("speaking");
+    }
+
+  } catch (err) {
+    removeThinkingPlaceholder(placeholderId);
+    voiceLiveStatus.innerText = "Error al responder";
+    voiceOrb.classList.remove("speaking");
+  }
+
+  chatStream.scrollTop = chatStream.scrollHeight;
+}
+
+// -------------------------------------------------------
+// DESLIZAR SIDEBAR (SWIPE) EN MÓVIL
+// -------------------------------------------------------
+let touchStartX = 0;
+let touchEndX = 0;
+
+document.addEventListener("touchstart", (e) => {
+  touchStartX = e.changedTouches[0].screenX;
+}, { passive: true });
+
+document.addEventListener("touchend", (e) => {
+  touchEndX = e.changedTouches[0].screenX;
+  const diff = touchEndX - touchStartX;
+
+  // Deslizar derecha desde el borde izquierdo → abrir sidebar
+  if (touchStartX < 30 && diff > 60) {
+    sidebar.classList.add("mobile-open");
+    sidebar.classList.remove("collapsed");
+  }
+
+  // Deslizar izquierda → cerrar sidebar
+  if (diff < -60 && sidebar.classList.contains("mobile-open")) {
+    sidebar.classList.remove("mobile-open");
+  }
+}, { passive: true });
