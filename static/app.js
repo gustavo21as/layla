@@ -448,38 +448,45 @@ function updateSessionHistory(firstText) {
 }
 
 // -------------------------------------------------------
-// TTS ELEVENLABS
+// TTS ELEVENLABS — retorna Promise que resuelve al terminar
 // -------------------------------------------------------
-async function playElevenLabsTTS(text) {
-  if (!isVoiceActive) return;
-  const clean = text.replace(/\[IMAGE_PROMPT:.*?\]/g, '').replace(/[*_#`]/g, '').trim();
-  if (!clean) return;
-  try {
-    const res = await fetch("/api/tts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: clean })
-    });
-    if (!res.ok) throw new Error("TTS error");
-    const blob = await res.blob();
-    const audioUrl = URL.createObjectURL(blob);
-    audioPlayer.src = audioUrl;
-    audioPlayer.onplay = () => { isAudioPlaying = true; };
-    audioPlayer.onended = () => { isAudioPlaying = false; };
-    audioPlayer.onerror = () => { isAudioPlaying = false; fallbackTTS(clean); };
-    audioPlayer.play().catch(() => fallbackTTS(clean));
-  } catch (e) { fallbackTTS(clean); }
+function playElevenLabsTTS(text) {
+  return new Promise(async (resolve) => {
+    if (!isVoiceActive) return resolve();
+    const clean = text.replace(/\[IMAGE_PROMPT:.*?\]/g, '').replace(/[*_#`]/g, '').trim();
+    if (!clean) return resolve();
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: clean })
+      });
+      if (!res.ok) throw new Error("TTS error");
+      const blob = await res.blob();
+      const audioUrl = URL.createObjectURL(blob);
+      audioPlayer.src = audioUrl;
+      audioPlayer.onplay = () => { isAudioPlaying = true; };
+      audioPlayer.onended = () => { isAudioPlaying = false; resolve(); };
+      audioPlayer.onerror = () => { isAudioPlaying = false; fallbackTTS(clean).then(resolve); };
+      audioPlayer.play().catch(() => fallbackTTS(clean).then(resolve));
+    } catch (e) { fallbackTTS(clean).then(resolve); }
+  });
 }
 
 function fallbackTTS(text) {
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.lang = "es-PE";
-    utt.onstart = () => { isAudioPlaying = true; };
-    utt.onend = () => { isAudioPlaying = false; };
-    window.speechSynthesis.speak(utt);
-  }
+  return new Promise((resolve) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.lang = "es-PE";
+      utt.onstart = () => { isAudioPlaying = true; };
+      utt.onend = () => { isAudioPlaying = false; resolve(); };
+      utt.onerror = () => { isAudioPlaying = false; resolve(); };
+      window.speechSynthesis.speak(utt);
+    } else {
+      resolve();
+    }
+  });
 }
 
 // -------------------------------------------------------
@@ -610,11 +617,26 @@ const voiceLiveMute = document.getElementById("voiceLiveMute");
 let isVoiceLiveMuted = false;
 let voiceRec = null;
 
+// -------------------------------------------------------
+// MODO VOZ EN VIVO — FLUJO COMPLETO
+// -------------------------------------------------------
+
+function setOrbState(state) {
+  // state: "idle" | "listening" | "thinking" | "speaking"
+  voiceOrb.className = "voice-orb " + state;
+  const statusMap = {
+    idle:      "Toca el micrófono para hablar",
+    listening: "Escuchando...",
+    thinking:  "Layla pensando...",
+    speaking:  "Layla hablando..."
+  };
+  voiceLiveStatus.innerText = statusMap[state] || "";
+}
+
 // El micrófono abre la pantalla de voz en vivo
 micBtn.addEventListener("click", () => {
   voiceLiveScreen.classList.add("active");
-  voiceLiveStatus.innerText = "Toca el botón para hablar";
-  voiceOrb.className = "voice-orb";
+  setOrbState("idle");
   if (voiceLiveTranscript) voiceLiveTranscript.innerText = "";
 });
 
@@ -622,31 +644,42 @@ micBtn.addEventListener("click", () => {
 voiceLiveClose.addEventListener("click", () => {
   voiceLiveScreen.classList.remove("active");
   if (voiceRec) { try { voiceRec.stop(); } catch(e) {} }
-  voiceOrb.className = "voice-orb";
+  audioPlayer.pause();
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
   isAudioPlaying = false;
+  setOrbState("idle");
 });
 
 // Botón orbe — grabar
 voiceOrbBtn.addEventListener("click", async () => {
+  // Si está escuchando, parar
   if (voiceOrbBtn.classList.contains("listening")) {
     if (voiceRec) { try { voiceRec.stop(); } catch(e) {} }
     voiceOrbBtn.classList.remove("listening");
-    voiceOrb.className = "voice-orb";
-    voiceLiveStatus.innerText = "Toca para hablar";
+    setOrbState("idle");
     return;
   }
 
-  // Pedir permiso micro
+  // Si está hablando, parar
+  if (isAudioPlaying) {
+    audioPlayer.pause();
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    isAudioPlaying = false;
+    setOrbState("idle");
+    return;
+  }
+
+  // Pedir permiso micrófono
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     stream.getTracks().forEach(t => t.stop());
   } catch (e) {
-    voiceLiveStatus.innerText = "⚠️ Permite el micrófono primero";
+    voiceLiveStatus.innerText = "⚠️ Permite el micrófono en tu navegador";
     return;
   }
 
   if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-    voiceLiveStatus.innerText = "⚠️ Usa Chrome para voz";
+    voiceLiveStatus.innerText = "⚠️ Usa Chrome para la función de voz";
     return;
   }
 
@@ -658,8 +691,7 @@ voiceOrbBtn.addEventListener("click", async () => {
 
   voiceRec.onstart = () => {
     voiceOrbBtn.classList.add("listening");
-    voiceOrb.className = "voice-orb listening";
-    voiceLiveStatus.innerText = "Escuchando...";
+    setOrbState("listening");
     voiceLiveTranscript.innerText = "";
   };
 
@@ -675,55 +707,83 @@ voiceOrbBtn.addEventListener("click", async () => {
 
   voiceRec.onend = async () => {
     voiceOrbBtn.classList.remove("listening");
-    voiceOrb.className = "voice-orb";
     const transcript = voiceLiveTranscript.innerText.trim();
+
     if (!transcript) {
+      setOrbState("idle");
       voiceLiveStatus.innerText = "No escuché nada. Toca de nuevo.";
       return;
     }
-    voiceLiveStatus.innerText = "Layla pensando...";
+
+    // Pensando
+    setOrbState("thinking");
+    voiceLiveTranscript.innerText = "";
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: transcript, history: conversationHistory, user: currentUser, emotion: currentEmotion })
+        body: JSON.stringify({
+          message: transcript,
+          history: conversationHistory,
+          user: currentUser,
+          emotion: currentEmotion
+        })
       });
+      if (!res.ok) throw new Error(`Error ${res.status}`);
       const data = await res.json();
+
       conversationHistory.push({ role: "user", text: transcript });
       conversationHistory.push({ role: "model", text: data.reply });
       updateSessionHistory(transcript);
-      voiceLiveTranscript.innerText = data.reply;
-      voiceLiveStatus.innerText = "Layla respondiendo...";
-      voiceOrb.className = "voice-orb speaking";
+
+      // Mostrar transcript de respuesta
+      voiceLiveTranscript.innerText = data.reply.length > 200
+        ? data.reply.substring(0, 200) + "..."
+        : data.reply;
+
+      // Agregar al chat
       appendUserMessage(transcript);
-      appendAssistantMessage(data.reply);
+      appendAssistantMessage(data.reply, data.image_url);
       heroWelcome.style.display = "none";
+
+      // Hablar
       if (!isVoiceLiveMuted) {
+        setOrbState("speaking");
         await playElevenLabsTTS(data.reply);
       }
-      voiceOrb.className = "voice-orb";
-      voiceLiveStatus.innerText = "Toca para hablar";
+
+      setOrbState("idle");
+      voiceLiveTranscript.innerText = "";
+
     } catch (err) {
-      voiceLiveStatus.innerText = "Error al responder";
-      voiceOrb.className = "voice-orb";
+      setOrbState("idle");
+      voiceLiveStatus.innerText = "Error de conexión. Intenta de nuevo.";
     }
   };
 
   voiceRec.onerror = (e) => {
     voiceOrbBtn.classList.remove("listening");
-    voiceOrb.className = "voice-orb";
-    voiceLiveStatus.innerText = e.error === "no-speech" ? "No escuché nada." : "Error: " + e.error;
+    setOrbState("idle");
+    if (e.error === "no-speech") {
+      voiceLiveStatus.innerText = "No escuché nada. Toca de nuevo.";
+    } else if (e.error === "not-allowed") {
+      voiceLiveStatus.innerText = "⚠️ Permite el micrófono primero.";
+    } else {
+      voiceLiveStatus.innerText = "Error: " + e.error;
+    }
   };
 
   voiceRec.start();
 });
 
-// Mutear voz
+// Mutear / desmutear voz
 voiceLiveMute.addEventListener("click", () => {
   isVoiceLiveMuted = !isVoiceLiveMuted;
   voiceLiveMute.innerText = isVoiceLiveMuted ? "🔇" : "🔊";
   if (isVoiceLiveMuted) {
     audioPlayer.pause();
     if (window.speechSynthesis) window.speechSynthesis.cancel();
+    isAudioPlaying = false;
   }
 });

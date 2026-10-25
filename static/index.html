@@ -18,282 +18,206 @@
 </head>
 <body class="theme-dark emotion-professional">
 
-  <!-- AURA GLOW OVERLAY -->
   <div class="aura-glow" id="auraGlow"></div>
 
-  <!-- MAIN APP CONTAINER -->
   <div class="app-shell">
     
-    <!-- LEFT SIDEBAR -->
+    <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-top">
         <div class="brand-zone">
-          <div class="brand-orb">
-            <span class="orb-core"></span>
-          </div>
+          <div class="brand-orb"><span class="orb-core"></span></div>
           <div class="brand-text">
             <span class="brand-title">LAYLA</span>
-            <span class="brand-edition">QUANTUM 4.0</span>
+            <span class="brand-edition">QUANTUM 4.1</span>
           </div>
         </div>
-
         <button class="btn-new-chat" id="newChatBtn">
           <span class="btn-icon">＋</span>
           <span>Nueva conversación</span>
         </button>
       </div>
-
-      <!-- CONVERSATION HISTORY -->
       <div class="sidebar-scroll">
         <div class="history-header">Recientes</div>
         <div class="history-list" id="historyList"></div>
       </div>
-
-      <!-- SIDEBAR FOOTER (USER & LOGIN) -->
       <div class="sidebar-footer">
-        <div class="user-card" id="userProfileBtn" title="Gestionar cuenta">
+        <div class="user-card" id="userProfileBtn">
           <div class="user-avatar" id="sidebarAvatar">G</div>
           <div class="user-details">
             <span class="user-name" id="sidebarName">Gerardo</span>
-            <span class="user-status" id="sidebarStatus">Activo</span>
+            <span class="user-status" id="sidebarStatus">Fundador</span>
           </div>
         </div>
       </div>
     </aside>
 
-    <!-- MAIN CHAT CANVAS -->
+    <!-- MAIN -->
     <main class="chat-main">
       
-      <!-- TOP NAVIGATION BAR -->
       <header class="top-bar">
         <div class="bar-left">
-          <button class="nav-btn" id="toggleSidebarBtn" title="Menú lateral">☰</button>
-          
-          <!-- EMOTION / PERSONALITY SELECTOR -->
+          <button class="nav-btn" id="toggleSidebarBtn">☰</button>
           <div class="emotion-pills">
-            <button class="pill-emotion active" data-emotion="professional" title="Modo Profesional y Ejecutivo">
-              <span class="pill-dot"></span> Profesional
-            </button>
-            <button class="pill-emotion" data-emotion="loving" title="Modo Amorosa y Dulce">
-              <span class="pill-dot"></span> Amorosa
-            </button>
-            <button class="pill-emotion" data-emotion="philosopher" title="Modo Filósofa y Profunda">
-              <span class="pill-dot"></span> Filósofa
-            </button>
-            <button class="pill-emotion" data-emotion="funny" title="Modo Chistosa y Bromista">
-              <span class="pill-dot"></span> Chistosa
-            </button>
-            <button class="pill-emotion" data-emotion="toxic" title="Modo Sin Filtros / Pesada">
-              <span class="pill-dot"></span> Sin Filtro
-            </button>
-            <button class="pill-emotion" data-emotion="advisor" title="Modo Consejera">
-              <span class="pill-dot"></span> Consejera
-            </button>
-            <button class="pill-emotion" data-emotion="dramatic" title="Modo Dramática">
-              <span class="pill-dot"></span> Dramática
-            </button>
+            <button class="pill-emotion active" data-emotion="professional"><span class="pill-dot"></span> Profesional</button>
+            <button class="pill-emotion" data-emotion="loving"><span class="pill-dot"></span> Amorosa</button>
+            <button class="pill-emotion" data-emotion="philosopher"><span class="pill-dot"></span> Filósofa</button>
+            <button class="pill-emotion" data-emotion="funny"><span class="pill-dot"></span> Chistosa</button>
+            <button class="pill-emotion" data-emotion="toxic"><span class="pill-dot"></span> Sin Filtro</button>
+            <button class="pill-emotion" data-emotion="advisor"><span class="pill-dot"></span> Consejera</button>
+            <button class="pill-emotion" data-emotion="dramatic"><span class="pill-dot"></span> Dramática</button>
           </div>
         </div>
-
         <div class="bar-right">
-          <!-- LIVE SOUNDWAVE TOGGLE -->
-          <button class="wave-toggle-btn active" id="waveToggleBtn" title="Activar/Desactivar Voz y Ondas Sonoras">
+          <button class="wave-toggle-btn active" id="waveToggleBtn">
             <span class="wave-icon">〰️</span>
             <span class="wave-label">Voz Activa</span>
           </button>
-
-          <!-- THEME SWITCH (DARK / LIGHT) -->
-          <button class="nav-btn" id="themeToggleBtn" title="Cambiar tema (Oscuro / Claro)">🌙</button>
-
-          <!-- AUTH BUTTON -->
+          <button class="nav-btn" id="themeToggleBtn">🌙</button>
           <button class="btn-auth-header" id="headerAuthBtn">Acceder</button>
         </div>
       </header>
 
-      <!-- LIVE SOUNDWAVE HERO BAR (GEMINI LIVE STYLE) -->
       <div class="soundwave-bar" id="soundwaveBar">
         <div class="soundwave-indicator">
           <canvas id="liveWaveCanvas" width="280" height="40"></canvas>
-          <span class="wave-status-text" id="waveStatusText">Layla conectada con ElevenLabs</span>
+          <span class="wave-status-text" id="waveStatusText">Modo Profesional</span>
         </div>
       </div>
 
-      <!-- CHAT STREAM -->
       <div class="chat-stream" id="chatStream">
-        
-        <!-- WELCOME SCREEN -->
         <div class="hero-welcome" id="heroWelcome">
           <div class="hero-orb">
             <div class="inner-pulse"></div>
             <span class="orb-symbol">✨</span>
           </div>
-          <h1 class="hero-title">Hola, mi nombre es Layla</h1>
-          <p class="hero-desc">Tu inteligencia artificial con voz de alta fidelidad, lógica cuántica y visión 4D.</p>
-
+          <h1 class="hero-title">Hola, soy Layla</h1>
+          <p class="hero-desc">Tu asistente con voz real, visión y 7 personalidades.</p>
           <div class="quick-grid">
             <div class="quick-card" onclick="quickAsk('Dime un número del 1 al 10')">
               <span class="q-icon">🎯</span>
-              <div class="q-text">
-                <span class="q-title">Respuesta Directa</span>
-                <span class="q-sub">'Dime un número del 1 al 10'</span>
-              </div>
-            </div>
-            <div class="quick-card" onclick="quickAsk('Genera una imagen en 4D de una nave espacial navegando un agujero negro cósmico')">
-              <span class="q-icon">🌌</span>
-              <div class="q-text">
-                <span class="q-title">Render 4D Parallax</span>
-                <span class="q-sub">Generar imagen interactiva</span>
-              </div>
+              <div class="q-text"><span class="q-title">Respuesta Directa</span><span class="q-sub">Pregunta rápida</span></div>
             </div>
             <div class="quick-card" onclick="quickAsk('¿Quién te creó y cuál es tu propósito?')">
               <span class="q-icon">👑</span>
-              <div class="q-text">
-                <span class="q-title">Origen y Fundador</span>
-                <span class="q-sub">Conocer a su creador</span>
-              </div>
+              <div class="q-text"><span class="q-title">Mi Origen</span><span class="q-sub">Conocer a Layla</span></div>
+            </div>
+            <div class="quick-card" onclick="quickAsk('Dame un consejo de vida importante')">
+              <span class="q-icon">💚</span>
+              <div class="q-text"><span class="q-title">Consejo de Vida</span><span class="q-sub">Modo Consejera</span></div>
             </div>
             <div class="quick-card" onclick="quickAsk('Hazme un chiste rápido y agudo')">
               <span class="q-icon">⚡</span>
-              <div class="q-text">
-                <span class="q-title">Chiste Rápido</span>
-                <span class="q-sub">Humor e ingenio</span>
-              </div>
+              <div class="q-text"><span class="q-title">Chiste Rápido</span><span class="q-sub">Modo Chistosa</span></div>
             </div>
           </div>
         </div>
-
-        <!-- MESSAGES FEED -->
         <div class="messages-feed" id="messagesFeed"></div>
       </div>
 
       <!-- INPUT BAR -->
       <div class="chat-input-wrapper">
-        <!-- ATTACHED PHOTO PREVIEW -->
         <div class="photo-preview-box" id="photoPreviewBox" style="display:none;">
           <img id="photoPreviewImg" src="" alt="Foto adjunta">
           <div class="photo-preview-info">
             <span class="preview-title" id="photoFileName">foto.jpg</span>
-            <span class="preview-sub">Lista para resolver tarea / matemáticas</span>
+            <span class="preview-sub">Lista para analizar</span>
           </div>
-          <button class="btn-remove-photo" id="removePhotoBtn" title="Quitar imagen">✕</button>
+          <button class="btn-remove-photo" id="removePhotoBtn">✕</button>
         </div>
 
         <div class="input-card">
-          <!-- INPUTS OCULTOS -->
           <input type="file" id="photoInput" accept="image/*" style="display:none;">
           <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;">
           <input type="file" id="fileInput" accept="*/*" style="display:none;">
 
-          <!-- BOTÓN + QUE ABRE MENÚ DE ADJUNTOS -->
           <div class="attach-menu-wrapper">
-            <button class="action-btn attach-btn" id="attachBtn" title="Adjuntar">
-              <span>＋</span>
-            </button>
+            <button class="action-btn attach-btn" id="attachBtn"><span>＋</span></button>
             <div class="attach-menu" id="attachMenu">
-              <button class="attach-option" id="cameraBtn">
-                <span>📷</span><span>Cámara</span>
-              </button>
-              <button class="attach-option" id="uploadPhotoBtn">
-                <span>🖼️</span><span>Fotos</span>
-              </button>
-              <button class="attach-option" id="fileBtn">
-                <span>📁</span><span>Archivo</span>
-              </button>
+              <button class="attach-option" id="cameraBtn"><span>📷</span><span>Cámara</span></button>
+              <button class="attach-option" id="uploadPhotoBtn"><span>🖼️</span><span>Fotos</span></button>
+              <button class="attach-option" id="fileBtn"><span>📁</span><span>Archivo</span></button>
             </div>
           </div>
           
           <textarea id="userInput" placeholder="Mensaje a Layla..." rows="1"></textarea>
-
-          <button class="mic-btn" id="micBtn" title="Voz en vivo">
-            <span class="mic-icon">🎙️</span>
-          </button>
-
-          <button class="send-btn" id="sendBtn" title="Enviar" onclick="sendMessage()">
-            <span>➔</span>
-          </button>
+          <button class="mic-btn" id="micBtn"><span class="mic-icon">🎙️</span></button>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()"><span>➔</span></button>
         </div>
-        <div class="input-note">
-          Layla Quantum 4.1 // Visión de Tareas, Audio Hiperrealista & Lógica Cuántica
-        </div>
+        <div class="input-note">Layla AI · Voz Real · Visión · 7 Personalidades</div>
       </div>
 
     </main>
   </div>
 
-  <!-- AUTH / LOGIN MODAL -->
+  <!-- MODAL LOGIN -->
   <div class="modal-backdrop" id="authModal">
     <div class="modal-card">
       <button class="modal-close" onclick="closeAuthModal()">✕</button>
       <div class="auth-head">
-        <div class="auth-logo" id="secretVoiceBtn" title="Ajustes de voz">L</div>
+        <div class="auth-logo" id="secretVoiceBtn">L</div>
         <h2>Acceso a Layla AI</h2>
-        <p>Inicia sesión para sincronizar tus conversaciones</p>
+        <p>Inicia sesión para guardar tus conversaciones</p>
       </div>
 
-      <!-- PANEL SECRETO DE VOZ (oculto, se activa con doble clic en la L) -->
+      <!-- PANEL SECRETO VOZ — doble tap en la L -->
       <div id="secretVoicePanel" style="display:none;" class="secret-voice-panel">
-        <div class="secret-voice-title">🎙️ Ajuste de Voz ElevenLabs</div>
+        <div class="secret-voice-title">🎙️ Cambiar Voz</div>
         <div class="secret-voice-row">
-          <label>Voz 1 (Tu voz principal)</label>
-          <button onclick="setVoice('pN4aFdNIp2mvGfTwy1Oj', this)" class="voice-opt-btn active">✓ Voz Principal</button>
+          <label>Voz Principal</label>
+          <button onclick="setVoice('eZxqQzb5CuYo3Kl6EXfZ', this)" class="voice-opt-btn active">✓ Activa</button>
         </div>
         <div class="secret-voice-row">
-          <label>Voz 2 (Voz alternativa)</label>
-          <button onclick="setVoice('b2htR0pMe28pYwCY9gnP', this)" class="voice-opt-btn">Voz Alternativa</button>
+          <label>Voz Alternativa</label>
+          <button onclick="setVoice('b2htR0pMe28pYwCY9gnP', this)" class="voice-opt-btn">Cambiar</button>
         </div>
         <div class="secret-voice-row">
           <label>ID personalizado:</label>
-          <input type="text" id="customVoiceInput" placeholder="Pega un Voice ID de ElevenLabs" class="voice-id-input">
+          <input type="text" id="customVoiceInput" placeholder="Pega Voice ID" class="voice-id-input">
           <button onclick="setCustomVoice()" class="voice-opt-btn">Aplicar</button>
         </div>
-        <div id="voiceActiveLabel" class="voice-active-label">Voz activa: pN4aFdNIp2mvGfTwy1Oj</div>
+        <div id="voiceActiveLabel" class="voice-active-label">Voz activa: eZxqQzb5CuYo3Kl6EXfZ</div>
       </div>
 
       <div class="auth-options">
         <button class="auth-btn google" onclick="loginSocial('Google')">
-          <span class="auth-icon">🌐</span>
-          <span>Continuar con Google</span>
+          <span class="auth-icon">🌐</span><span>Continuar con Google</span>
         </button>
         <button class="auth-btn facebook" onclick="loginSocial('Facebook')">
-          <span class="auth-icon">📘</span>
-          <span>Continuar con Facebook</span>
+          <span class="auth-icon">📘</span><span>Continuar con Facebook</span>
         </button>
         <button class="auth-btn twitter" onclick="loginSocial('Twitter / X')">
-          <span class="auth-icon">🐦</span>
-          <span>Continuar con X (Twitter)</span>
+          <span class="auth-icon">🐦</span><span>Continuar con X</span>
         </button>
         <button class="auth-btn guest" onclick="loginGuest()">
-          <span class="auth-icon">👤</span>
-          <span>Continuar como Invitado</span>
+          <span class="auth-icon">👤</span><span>Continuar como Invitado</span>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- 4D PARALLAX LIGHTBOX MODAL -->
+  <!-- MODAL IMAGEN -->
   <div class="modal-backdrop" id="imageModal">
     <div class="modal-4d-viewer">
       <button class="modal-close" onclick="closeImageModal()">✕</button>
       <div class="card-4d" id="modal4DCard">
-        <img id="modalImg" src="" alt="Render 4D de Layla">
+        <img id="modalImg" src="" alt="Imagen">
         <div class="glare-4d"></div>
       </div>
       <div class="modal-4d-footer">
-        <span class="footer-tip">Mueve el mouse o inclina el celular para experimentar el efecto 4D</span>
-        <a id="downloadImgBtn" href="#" download="layla-render-4d.jpg" class="btn-download-4d">⬇ Descargar Render HD</a>
+        <a id="downloadImgBtn" href="#" download="layla.jpg" class="btn-download-4d">⬇ Descargar</a>
       </div>
     </div>
   </div>
 
   <audio id="audioPlayer" preload="auto"></audio>
 
-  <!-- PANTALLA VIVO DE VOZ (Estilo ChatGPT Advanced Voice) -->
+  <!-- PANTALLA VOZ EN VIVO -->
   <div class="voice-live-screen" id="voiceLiveScreen">
     <div class="voice-live-top">
-      <span class="voice-live-title">Layla</span>
+      <span class="voice-live-title">LAYLA</span>
       <button class="voice-live-settings" id="voiceLiveSettings">⚙️</button>
     </div>
-
     <div class="voice-orb-container">
       <div class="voice-orb" id="voiceOrb">
         <div class="orb-ring ring1"></div>
@@ -301,22 +225,17 @@
         <div class="orb-ring ring3"></div>
         <div class="orb-core-sphere"></div>
       </div>
-      <div class="voice-live-status" id="voiceLiveStatus">Toca para hablar</div>
+      <div class="voice-live-status" id="voiceLiveStatus">Toca el botón para hablar</div>
     </div>
-
     <div class="voice-live-transcript" id="voiceLiveTranscript"></div>
-
     <div class="voice-live-bottom">
       <button class="voice-live-close" id="voiceLiveClose">✕</button>
-      <button class="voice-orb-btn" id="voiceOrbBtn">
-        <span class="orb-btn-icon">🎙️</span>
-      </button>
+      <button class="voice-orb-btn" id="voiceOrbBtn"><span>🎙️</span></button>
       <button class="voice-live-mute" id="voiceLiveMute">🔊</button>
     </div>
   </div>
 
   <script src="app.js"></script>
-  <!-- Firebase SDK (defer para no bloquear app.js) -->
   <script defer type="module" src="firebase.js"></script>
 </body>
 </html>
