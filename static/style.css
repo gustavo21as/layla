@@ -2025,3 +2025,304 @@ button, a, [onclick] {
 .history-dots-option.delete {
   color: #ef4444;
 }
+
+/* =======================================================
+   MODO VOZ EN VIVO - ORBE ESTILO CHATGPT
+   ======================================================= */
+
+.voice-live-screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #050a14;
+  z-index: 999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 60px 24px 40px;
+}
+
+.voice-live-screen.active {
+  display: flex;
+}
+
+.voice-live-top {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.voice-live-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 2px;
+}
+
+.voice-live-settings {
+  position: absolute;
+  right: 0;
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.voice-orb-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  flex: 1;
+  justify-content: center;
+}
+
+.voice-orb {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.voice-orb .orb-core-sphere {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, 
+    var(--emotion-color) 0%, 
+    #0044ff 50%, 
+    #050a14 100%
+  );
+  box-shadow: 0 0 40px var(--emotion-glow), 0 0 80px rgba(0, 68, 255, 0.3);
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.orb-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--emotion-color);
+  opacity: 0.3;
+  animation: orbRingPulse 3s infinite;
+}
+
+.ring1 { width: 160px; height: 160px; animation-delay: 0s; }
+.ring2 { width: 190px; height: 190px; animation-delay: 0.5s; opacity: 0.2; }
+.ring3 { width: 220px; height: 220px; animation-delay: 1s; opacity: 0.1; }
+
+@keyframes orbRingPulse {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.05); opacity: 0.6; }
+}
+
+/* Orbe escuchando */
+.voice-orb.listening .orb-core-sphere {
+  animation: orbListening 0.8s infinite alternate;
+  box-shadow: 0 0 60px var(--emotion-glow), 0 0 120px rgba(0, 210, 255, 0.5);
+}
+
+@keyframes orbListening {
+  0% { transform: scale(0.95); }
+  100% { transform: scale(1.08); }
+}
+
+/* Orbe hablando */
+.voice-orb.speaking .orb-core-sphere {
+  animation: orbSpeaking 0.4s infinite alternate;
+  background: radial-gradient(circle at 35% 35%, #ff3399, #6600ff, #050a14);
+  box-shadow: 0 0 60px rgba(255, 51, 153, 0.6), 0 0 120px rgba(102, 0, 255, 0.4);
+}
+
+@keyframes orbSpeaking {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.12); }
+}
+
+.voice-live-status {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-sub);
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+.voice-live-transcript {
+  min-height: 60px;
+  max-height: 120px;
+  overflow-y: auto;
+  font-size: 16px;
+  color: var(--text-main);
+  text-align: center;
+  padding: 0 20px;
+  line-height: 1.6;
+}
+
+.voice-live-bottom {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding-bottom: 20px;
+}
+
+.voice-live-close {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-main);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+}
+
+.voice-live-close:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: #ef4444;
+}
+
+.voice-orb-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--emotion-color);
+  border: none;
+  color: #050a14;
+  font-size: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px var(--emotion-glow);
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+}
+
+.voice-orb-btn.listening {
+  background: #ef4444;
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.6);
+  animation: micPulse 1s infinite alternate;
+}
+
+.voice-live-mute {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-main);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+}
+
+/* =======================================================
+   MENÚ + ADJUNTOS
+   ======================================================= */
+
+.attach-menu-wrapper {
+  position: relative;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+
+.attach-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  color: var(--emotion-color);
+  font-size: 22px;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+}
+
+.attach-btn:hover, .attach-btn.open {
+  background: var(--emotion-subtle);
+  border-color: var(--emotion-color);
+}
+
+.attach-menu {
+  display: none;
+  position: absolute;
+  bottom: 48px;
+  left: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 8px;
+  min-width: 140px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+  animation: slideIn 0.15s ease-out;
+}
+
+.attach-menu.open {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.attach-option {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+  text-align: left;
+}
+
+.attach-option:hover, .attach-option:active {
+  background: var(--bg-card-hover);
+  color: var(--emotion-color);
+}
+
+/* =======================================================
+   SWIPE SIDEBAR EN MÓVIL
+   ======================================================= */
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 29;
+  backdrop-filter: blur(2px);
+}
+
+.sidebar-overlay.active {
+  display: block;
+}
