@@ -42,7 +42,7 @@ const db   = getFirestore(app);
 // -------------------------------------------------------
 onAuthStateChanged(auth, (firebaseUser) => {
   if (firebaseUser) {
-    // Usuario autenticado con Google/Facebook
+    // Usuario autenticado con Google/Facebook — actualizar UI
     const name = firebaseUser.displayName || firebaseUser.email || "Usuario";
     const isGerardo = name.toLowerCase().includes("gerardo") ||
                       (firebaseUser.email || "").toLowerCase().includes("gerardo");
@@ -51,6 +51,7 @@ onAuthStateChanged(auth, (firebaseUser) => {
       is_creator: isGerardo,
       avatar: name.charAt(0).toUpperCase(),
       uid: firebaseUser.uid,
+      email: firebaseUser.email || "",
       photo: firebaseUser.photoURL || null
     };
     localStorage.setItem("layla_user", JSON.stringify(newUser));
@@ -58,6 +59,7 @@ onAuthStateChanged(auth, (firebaseUser) => {
     if (window._laylaCloseModal) window._laylaCloseModal();
     loadUserConversations(firebaseUser.uid);
   }
+  // Si NO hay usuario logueado, NO hacer nada — dejar que use la app normalmente
 });
 
 // -------------------------------------------------------

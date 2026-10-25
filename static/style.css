@@ -60,14 +60,14 @@ body.emotion-dramatic {
 
 /* THEME DARK - COSMIC SAPPHIRE */
 body.theme-dark {
-  --bg-deep: #050a14;
-  --bg-surface: #0a1324;
-  --bg-card: rgba(14, 26, 49, 0.7);
-  --bg-card-hover: rgba(20, 37, 70, 0.85);
-  --bg-input: #0b162a;
+  --bg-deep: #080e1a;
+  --bg-surface: #0d1829;
+  --bg-card: rgba(16, 30, 56, 0.75);
+  --bg-card-hover: rgba(22, 42, 78, 0.9);
+  --bg-input: #0c1828;
   --border-light: rgba(0, 210, 255, 0.15);
   --border-active: var(--emotion-color);
-  --text-main: #f0f7ff;
+  --text-main: #eef5ff;
   --text-sub: #8da4c4;
   --text-dim: #4b6587;
   --bubble-user: #0f2240;
@@ -109,8 +109,8 @@ body {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(circle at 50% 0%, var(--emotion-glow) 0%, transparent 60%);
-  opacity: 0.35;
+  background: radial-gradient(circle at 50% 0%, var(--emotion-glow) 0%, transparent 55%);
+  opacity: 0.2;
   transition: background 0.6s ease, opacity 0.6s ease;
   z-index: 1;
 }
