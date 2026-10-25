@@ -151,7 +151,7 @@
   </div>
 
   <!-- MODAL LOGIN -->
-  <div class="modal-backdrop" id="authModal">
+  <div class="modal-backdrop" id="authModal" onclick="if(event.target===this)closeAuthModal()">
     <div class="modal-card">
       <button class="modal-close" onclick="closeAuthModal()">✕</button>
       <div class="auth-head">

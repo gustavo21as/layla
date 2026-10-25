@@ -204,9 +204,9 @@ function setCustomVoice() {
 // Login — delega a Firebase
 function loginSocial(provider) {
   if (!window._laylaFirebase) return;
-  if (provider === "Google")   window._laylaFirebase.loginWithGoogle();
-  if (provider === "Facebook") window._laylaFirebase.loginWithFacebook();
-  if (provider === "Twitter / X") window._laylaFirebase.loginWithGoogle(); // fallback Google
+  if (provider === "Google")     window._laylaFirebase.loginWithGoogle();
+  if (provider === "Facebook")   window._laylaFirebase.loginWithFacebook();
+  if (provider === "Twitter / X") window._laylaFirebase.loginWithTwitter();
 }
 
 function loginGuest() {
@@ -477,25 +477,36 @@ function updateSessionHistory(firstText) {
 // -------------------------------------------------------
 // TTS ELEVENLABS — retorna Promise que resuelve al terminar
 // -------------------------------------------------------
+// -------------------------------------------------------
+// TTS ELEVENLABS — llamada directa al API desde el frontend
+// -------------------------------------------------------
+const ELEVEN_API_KEY = "f9ebfddc7848d727dc872fdf0a76f0058cbd91628e0f271cd7d7ab0e337f0424";
+
 function playElevenLabsTTS(text) {
   return new Promise(async (resolve) => {
     if (!isVoiceActive) return resolve();
     const clean = text.replace(/\[IMAGE_PROMPT:.*?\]/g, '').replace(/[*_#`]/g, '').trim();
     if (!clean) return resolve();
     try {
-      const res = await fetch("/api/tts", {
+      const voiceId = activeVoiceId || "oJIuRMopN0sojGjwD6rQ";
+      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: clean, voice_id: activeVoiceId })
+        headers: {
+          "Content-Type": "application/json",
+          "xi-api-key": ELEVEN_API_KEY
+        },
+        body: JSON.stringify({
+          text: clean.substring(0, 500),
+          model_id: "eleven_multilingual_v2",
+          voice_settings: { stability: 0.5, similarity_boost: 0.85 }
+        })
       });
-      if (res.status === 503) {
-        // ElevenLabs no disponible — usar voz del navegador
-        console.warn("ElevenLabs no disponible, usando voz del navegador");
+      if (!res.ok) {
+        console.warn("ElevenLabs error:", res.status);
         return fallbackTTS(clean).then(resolve);
       }
-      if (!res.ok) throw new Error("TTS HTTP " + res.status);
       const blob = await res.blob();
-      if (blob.size < 100) throw new Error("Audio vacío");
+      if (blob.size < 100) return fallbackTTS(clean).then(resolve);
       const audioUrl = URL.createObjectURL(blob);
       audioPlayer.src = audioUrl;
       audioPlayer.onplay  = () => { isAudioPlaying = true; };

@@ -6,6 +6,7 @@ import {
   getAuth,
   GoogleAuthProvider,
   FacebookAuthProvider,
+  TwitterAuthProvider,
   signInWithPopup,
   signOut,
   onAuthStateChanged
@@ -79,8 +80,19 @@ async function loginWithGoogle() {
 }
 
 // -------------------------------------------------------
-// LOGIN CON FACEBOOK
+// LOGIN CON TWITTER/X
 // -------------------------------------------------------
+async function loginWithTwitter() {
+  try {
+    const provider = new TwitterAuthProvider();
+    await signInWithPopup(auth, provider);
+  } catch (e) {
+    console.error("Twitter login error:", e);
+    if (e.code !== "auth/popup-closed-by-user") {
+      alert("Error al iniciar con X: " + e.message);
+    }
+  }
+}
 async function loginWithFacebook() {
   try {
     const provider = new FacebookAuthProvider();
@@ -245,6 +257,7 @@ window._laylaFirebase = {
   deleteConversation,
   loginWithGoogle,
   loginWithFacebook,
+  loginWithTwitter,
   loginAsGuest,
   logout
 };
