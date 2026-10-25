@@ -13,7 +13,7 @@ let currentPhotoMime = "image/jpeg";
 let isAudioPlaying = false;
 let isMicListening = false;
 let wavePhase = 0;
-let activeVoiceId = localStorage.getItem("layla_voice_id") || "eZxqQzb5CuYo3Kl6EXfZ";
+let activeVoiceId = localStorage.getItem("layla_voice_id") || "oJIuRMopN0sojGjwD6rQ";
 let secretTapCount = 0;
 let secretTapTimer = null;
 
