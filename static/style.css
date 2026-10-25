@@ -992,6 +992,56 @@ body {
   color: var(--text-sub);
 }
 
+.auth-btn.logout-btn {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  margin-top: 10px;
+}
+
+.auth-btn.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+}
+
+.logged-user-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+
+.logged-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--emotion-color), #0044ff);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 14px var(--emotion-glow);
+}
+
+.logged-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.logged-email {
+  font-size: 12px;
+  color: var(--text-sub);
+  word-break: break-all;
+}
+
 /* PANEL SECRETO DE VOZ */
 .secret-voice-panel {
   background: var(--bg-card);
@@ -1649,105 +1699,160 @@ button, a, [onclick] {
 
 /* ORBE — tamaño adaptable */
 .voice-orb {
-  width: min(220px, 55vw);
-  height: min(220px, 55vw);
+  width: min(240px, 58vw);
+  height: min(240px, 58vw);
   border-radius: 50%;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 0 40px rgba(0, 120, 255, 0.4));
   transition: filter 0.4s ease;
   flex-shrink: 0;
 }
 
 /* Núcleo fluido */
 .orb-core-sphere {
-  width: 90%;
-  height: 90%;
+  width: 86%;
+  height: 86%;
   border-radius: 50%;
   position: relative;
   overflow: hidden;
-  background: #0a0a1a;
+  background: #050510;
   z-index: 2;
+  box-shadow:
+    inset 0 0 40px rgba(0, 100, 255, 0.3),
+    inset 0 0 80px rgba(0, 0, 0, 0.6);
 }
 
-/* Gradiente rotativo — IDLE: azul */
+/* Gradiente rotativo — IDLE: azul profundo */
 .orb-core-sphere::before {
   content: "";
   position: absolute;
-  inset: -50%;
-  background: conic-gradient(from 0deg, #0044ff, #00d2ff, #7b2fff, #00d2ff, #0044ff);
-  animation: orbRotate 4s linear infinite;
+  inset: -60%;
+  background: conic-gradient(
+    from 0deg,
+    #0033cc 0%,
+    #00aaff 20%,
+    #6600ff 40%,
+    #00d2ff 60%,
+    #0033cc 80%,
+    #00aaff 100%
+  );
+  animation: orbRotate 5s linear infinite;
   border-radius: 50%;
-  opacity: 0.9;
+  opacity: 1;
 }
 
-/* Capa oscura interior */
+/* Capa oscura interior — da profundidad 3D */
 .orb-core-sphere::after {
   content: "";
   position: absolute;
-  inset: 15%;
-  background: radial-gradient(circle at 40% 35%, #1a2a6c, #0a0a1a 70%);
+  inset: 8%;
+  background: radial-gradient(
+    circle at 38% 32%,
+    rgba(60, 80, 180, 0.5) 0%,
+    rgba(5, 5, 20, 0.95) 65%
+  );
   border-radius: 50%;
   z-index: 1;
 }
 
 @keyframes orbRotate {
-  0%   { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0%   { transform: rotate(0deg) scale(1); }
+  50%  { transform: rotate(180deg) scale(1.05); }
+  100% { transform: rotate(360deg) scale(1); }
 }
 
-/* Anillos */
+/* Anillos — más elegantes */
 .orb-ring {
   position: absolute;
   border-radius: 50%;
-  border: 1px solid rgba(0, 210, 255, 0.15);
-  animation: ringFloat 4s ease-in-out infinite;
+  animation: ringFloat 5s ease-in-out infinite;
   pointer-events: none;
 }
-.ring1 { width: 105%; height: 105%; animation-delay: 0s;   border-color: rgba(0, 210, 255, 0.2); }
-.ring2 { width: 118%; height: 118%; animation-delay: 0.8s; border-color: rgba(123, 47, 255, 0.15); }
-.ring3 { width: 132%; height: 132%; animation-delay: 1.6s; border-color: rgba(0, 68, 255, 0.1); }
+.ring1 {
+  width: 108%; height: 108%;
+  border: 1.5px solid rgba(0, 210, 255, 0.35);
+  animation-delay: 0s;
+}
+.ring2 {
+  width: 122%; height: 122%;
+  border: 1px solid rgba(100, 0, 255, 0.2);
+  animation-delay: 1s;
+}
+.ring3 {
+  width: 138%; height: 138%;
+  border: 1px solid rgba(0, 100, 255, 0.12);
+  animation-delay: 2s;
+}
 
 @keyframes ringFloat {
-  0%, 100% { transform: scale(1);    opacity: 0.5; }
-  50%       { transform: scale(1.04); opacity: 1; }
+  0%, 100% { transform: scale(1) rotate(0deg);   opacity: 0.4; }
+  50%       { transform: scale(1.06) rotate(4deg); opacity: 0.9; }
 }
 
-/* ESTADO: ESCUCHANDO — verde */
+/* ESTADO: ESCUCHANDO — verde neón */
 .voice-orb.listening .orb-core-sphere::before {
-  animation: orbRotate 1s linear infinite;
-  background: conic-gradient(from 0deg, #00ff88, #00d2ff, #00ff88, #0044ff, #00ff88);
+  animation: orbRotate 0.8s linear infinite;
+  background: conic-gradient(
+    from 0deg,
+    #00ff88 0%, #00ffcc 25%, #00aaff 50%, #00ff88 75%, #00ffcc 100%
+  );
 }
+.voice-orb.listening .orb-core-sphere::after {
+  background: radial-gradient(circle at 38% 32%, rgba(0,200,100,0.4) 0%, rgba(0,10,5,0.95) 65%);
+}
+.voice-orb.listening .ring1 { border-color: rgba(0, 255, 136, 0.5); }
+.voice-orb.listening .ring2 { border-color: rgba(0, 255, 136, 0.3); }
 .voice-orb.listening {
-  filter: drop-shadow(0 0 60px rgba(0, 255, 136, 0.5));
-  animation: orbPulse 0.6s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 30px rgba(0, 255, 136, 0.7)) drop-shadow(0 0 60px rgba(0, 200, 100, 0.4));
+  animation: orbPulse 0.5s ease-in-out infinite alternate;
 }
 
-/* ESTADO: PENSANDO — amarillo/naranja */
+/* ESTADO: PENSANDO — ámbar dorado */
 .voice-orb.thinking .orb-core-sphere::before {
   animation: orbRotate 2s linear infinite;
+  background: conic-gradient(
+    from 0deg,
+    #ff8800 0%, #ffcc00 25%, #ff5500 50%, #ffaa00 75%, #ff8800 100%
+  );
+}
+.voice-orb.thinking .orb-core-sphere::after {
+  background: radial-gradient(circle at 38% 32%, rgba(180,100,0,0.4) 0%, rgba(15,8,0,0.95) 65%);
+}
+.voice-orb.thinking .ring1 { border-color: rgba(255, 180, 0, 0.5); animation-duration: 1.5s; }
+.voice-orb.thinking {
+  filter: drop-shadow(0 0 25px rgba(255, 160, 0, 0.7)) drop-shadow(0 0 50px rgba(255, 100, 0, 0.3));
+  animation: orbPulse 1s ease-in-out infinite alternate;
+}
+
+/* ESTADO: HABLANDO — rosa violeta eléctrico */
+.voice-orb.speaking .orb-core-sphere::before {
+  animation: orbRotate 0.5s linear infinite;
+  background: conic-gradient(
+    from 0deg,
+    #ff0080 0%, #aa00ff 25%, #ff3300 50%, #cc00ff 75%, #ff0080 100%
+  );
+}
+.voice-orb.speaking .orb-core-sphere::after {
+  background: radial-gradient(circle at 38% 32%, rgba(150,0,150,0.4) 0%, rgba(10,0,15,0.95) 65%);
+}
+.voice-orb.speaking .ring1 { border-color: rgba(255, 0, 128, 0.6); animation-duration: 0.6s; }
+.voice-orb.speaking .ring2 { border-color: rgba(180, 0, 255, 0.4); animation-duration: 0.8s; }
+.voice-orb.speaking {
+  filter: drop-shadow(0 0 35px rgba(255, 0, 128, 0.8)) drop-shadow(0 0 70px rgba(150, 0, 255, 0.4));
+  animation: orbPulse 0.25s ease-in-out infinite alternate;
+}
+
+@keyframes orbPulse {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
   background: conic-gradient(from 0deg, #f59e0b, #ff6600, #f59e0b, #ffcc00, #f59e0b);
 }
 .voice-orb.thinking {
   filter: drop-shadow(0 0 50px rgba(245, 158, 11, 0.5));
   animation: orbPulse 1s ease-in-out infinite alternate;
-}
-
-/* ESTADO: HABLANDO — rosa/violeta */
-.voice-orb.speaking .orb-core-sphere::before {
-  animation: orbRotate 0.6s linear infinite;
-  background: conic-gradient(from 0deg, #ff3399, #7b2fff, #ff6600, #7b2fff, #ff3399);
-}
-.voice-orb.speaking {
-  filter: drop-shadow(0 0 60px rgba(255, 51, 153, 0.6));
-  animation: orbPulse 0.3s ease-in-out infinite alternate;
-}
-
-@keyframes orbPulse {
-  from { transform: scale(1); }
-  to   { transform: scale(1.07); }
 }
 
 /* STATUS TEXT */
@@ -1943,7 +2048,6 @@ button, a, [onclick] {
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   z-index: 29;
-  backdrop-filter: blur(2px);
 }
 
 .sidebar-overlay.active {

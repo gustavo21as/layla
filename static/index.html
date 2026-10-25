@@ -179,15 +179,27 @@
         <div id="voiceActiveLabel" class="voice-active-label">Voz activa: eZxqQzb5CuYo3Kl6EXfZ</div>
       </div>
 
-      <div class="auth-options">
+      <!-- SECCIÓN: USUARIO LOGUEADO -->
+      <div id="loggedSection" style="display:none;">
+        <div class="logged-user-card">
+          <div class="logged-avatar" id="loggedAvatar">U</div>
+          <div>
+            <div class="logged-name" id="loggedName">Usuario</div>
+            <div class="logged-email" id="loggedEmail"></div>
+          </div>
+        </div>
+        <button class="auth-btn logout-btn" onclick="if(window._laylaFirebase) window._laylaFirebase.logout(); closeAuthModal();">
+          <span class="auth-icon">🚪</span><span>Cerrar sesión</span>
+        </button>
+      </div>
+
+      <!-- SECCIÓN: OPCIONES DE LOGIN -->
+      <div class="auth-options" id="loginSection">
         <button class="auth-btn google" onclick="loginSocial('Google')">
           <span class="auth-icon">🌐</span><span>Continuar con Google</span>
         </button>
         <button class="auth-btn facebook" onclick="loginSocial('Facebook')">
           <span class="auth-icon">📘</span><span>Continuar con Facebook</span>
-        </button>
-        <button class="auth-btn twitter" onclick="loginSocial('Twitter / X')">
-          <span class="auth-icon">🐦</span><span>Continuar con X</span>
         </button>
         <button class="auth-btn guest" onclick="loginGuest()">
           <span class="auth-icon">👤</span><span>Continuar como Invitado</span>

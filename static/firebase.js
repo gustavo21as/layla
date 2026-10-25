@@ -1,8 +1,27 @@
 // =====================================================
-// LAYLA AI - FIREBASE FIRESTORE (MEMORIA EN LA NUBE)
+// LAYLA AI - FIREBASE AUTH + FIRESTORE
 // =====================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, orderBy, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  doc,
+  orderBy,
+  query,
+  where,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBKTv_KvmoS7cDnIBYN_NI_r_sj0xxNDgw",
@@ -14,19 +33,97 @@ const firebaseConfig = {
   appId: "1:573193078345:web:5d67cef7b01ec30e6b619b"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
 
 // -------------------------------------------------------
-// GUARDAR CONVERSACIÓN EN FIRESTORE
+// AUTH — estado persistente
 // -------------------------------------------------------
-export async function saveConversation(title, messages) {
+onAuthStateChanged(auth, (firebaseUser) => {
+  if (firebaseUser) {
+    // Usuario autenticado con Google/Facebook
+    const name = firebaseUser.displayName || firebaseUser.email || "Usuario";
+    const isGerardo = name.toLowerCase().includes("gerardo") ||
+                      (firebaseUser.email || "").toLowerCase().includes("gerardo");
+    const newUser = {
+      name: isGerardo ? "Gerardo" : name,
+      is_creator: isGerardo,
+      avatar: name.charAt(0).toUpperCase(),
+      uid: firebaseUser.uid,
+      photo: firebaseUser.photoURL || null
+    };
+    localStorage.setItem("layla_user", JSON.stringify(newUser));
+    if (window._laylaUpdateUser) window._laylaUpdateUser(newUser);
+    if (window._laylaCloseModal) window._laylaCloseModal();
+    loadUserConversations(firebaseUser.uid);
+  }
+});
+
+// -------------------------------------------------------
+// LOGIN CON GOOGLE
+// -------------------------------------------------------
+async function loginWithGoogle() {
   try {
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+    // onAuthStateChanged se encarga del resto
+  } catch (e) {
+    console.error("Google login error:", e);
+    if (e.code !== "auth/popup-closed-by-user") {
+      alert("Error al iniciar con Google: " + e.message);
+    }
+  }
+}
+
+// -------------------------------------------------------
+// LOGIN CON FACEBOOK
+// -------------------------------------------------------
+async function loginWithFacebook() {
+  try {
+    const provider = new FacebookAuthProvider();
+    await signInWithPopup(auth, provider);
+  } catch (e) {
+    console.error("Facebook login error:", e);
+    if (e.code !== "auth/popup-closed-by-user") {
+      alert("Error al iniciar con Facebook: " + e.message);
+    }
+  }
+}
+
+// -------------------------------------------------------
+// LOGIN COMO INVITADO — persiste en localStorage
+// -------------------------------------------------------
+function loginAsGuest() {
+  const guest = { name: "Invitado", is_creator: false, avatar: "I", uid: "guest" };
+  localStorage.setItem("layla_user", JSON.stringify(guest));
+  if (window._laylaUpdateUser) window._laylaUpdateUser(guest);
+  if (window._laylaCloseModal) window._laylaCloseModal();
+}
+
+// -------------------------------------------------------
+// CERRAR SESIÓN
+// -------------------------------------------------------
+async function logout() {
+  try {
+    await signOut(auth);
+  } catch(e) {}
+  const guest = { name: "Invitado", is_creator: false, avatar: "I", uid: "guest" };
+  localStorage.setItem("layla_user", JSON.stringify(guest));
+  if (window._laylaUpdateUser) window._laylaUpdateUser(guest);
+}
+
+// -------------------------------------------------------
+// FIRESTORE — guardar conversación
+// -------------------------------------------------------
+async function saveConversation(title, messages) {
+  try {
+    const uid = auth.currentUser?.uid || "guest";
     const docRef = await addDoc(collection(db, "conversations"), {
-      title: title,
-      messages: messages,
-      createdAt: serverTimestamp(),
-      user: "Gerardo"
+      title,
+      messages,
+      uid,
+      createdAt: serverTimestamp()
     });
     return docRef.id;
   } catch (e) {
@@ -36,49 +133,42 @@ export async function saveConversation(title, messages) {
 }
 
 // -------------------------------------------------------
-// CARGAR TODAS LAS CONVERSACIONES
+// FIRESTORE — cargar conversaciones del usuario actual
 // -------------------------------------------------------
-export async function loadConversations() {
+async function loadUserConversations(uid) {
   try {
-    const q = query(collection(db, "conversations"), orderBy("createdAt", "desc"));
+    const q = query(
+      collection(db, "conversations"),
+      where("uid", "==", uid),
+      orderBy("createdAt", "desc")
+    );
     const snapshot = await getDocs(q);
-    const convs = [];
-    snapshot.forEach(doc => {
-      convs.push({ id: doc.id, ...doc.data() });
+    const list = document.getElementById("historyList");
+    if (!list) return;
+    list.innerHTML = "";
+    snapshot.forEach(d => {
+      addHistoryItemFirebase(d.id, d.data().title, d.data().messages);
     });
-    return convs;
   } catch (e) {
     console.error("Error cargando conversaciones:", e);
-    return [];
   }
 }
 
 // -------------------------------------------------------
-// ELIMINAR CONVERSACIÓN
+// FIRESTORE — eliminar conversación
 // -------------------------------------------------------
-export async function deleteConversation(id) {
+async function deleteConversation(id) {
   try {
     await deleteDoc(doc(db, "conversations", id));
     return true;
   } catch (e) {
-    console.error("Error eliminando conversación:", e);
     return false;
   }
 }
 
 // -------------------------------------------------------
-// CARGAR HISTORIAL AL INICIAR — poblar el sidebar
+// SIDEBAR — agregar item de historial
 // -------------------------------------------------------
-window.addEventListener("DOMContentLoaded", async () => {
-  const list = document.getElementById("historyList");
-  if (!list) return;
-
-  const convs = await loadConversations();
-  convs.forEach(conv => {
-    addHistoryItemFirebase(conv.id, conv.title, conv.messages);
-  });
-});
-
 function addHistoryItemFirebase(id, title, messages) {
   const list = document.getElementById("historyList");
   if (!list) return;
@@ -86,25 +176,21 @@ function addHistoryItemFirebase(id, title, messages) {
   const item = document.createElement("div");
   item.className = "history-item";
   item.dataset.fbId = id;
-  item.innerText = title;
-  item.title = "Toca para ver opciones";
+  item.innerText = title || "Conversación";
 
   let pressTimer = null;
-
-  // En celular: toque largo = eliminar
   item.addEventListener("touchstart", () => {
     pressTimer = setTimeout(() => {
-      if (confirm(`¿Eliminar conversación?\n"${title}"`)) {
+      if (confirm(`¿Eliminar?\n"${title}"`)) {
         deleteConversation(id).then(ok => { if (ok) item.remove(); });
       }
     }, 600);
   });
-  item.addEventListener("touchend", () => clearTimeout(pressTimer));
+  item.addEventListener("touchend",  () => clearTimeout(pressTimer));
   item.addEventListener("touchmove", () => clearTimeout(pressTimer));
 
-  // En PC: clic normal = cargar conversación, clic derecho = eliminar
-  item.addEventListener("click", (e) => {
-    if (!messages || messages.length === 0) return;
+  item.addEventListener("click", () => {
+    if (!messages?.length) return;
     const feed = document.getElementById("messagesFeed");
     const hero = document.getElementById("heroWelcome");
     if (!feed || !hero) return;
@@ -141,7 +227,7 @@ function addHistoryItemFirebase(id, title, messages) {
 
   item.addEventListener("contextmenu", (e) => {
     e.preventDefault();
-    if (confirm(`¿Eliminar conversación?\n"${title}"`)) {
+    if (confirm(`¿Eliminar?\n"${title}"`)) {
       deleteConversation(id).then(ok => { if (ok) item.remove(); });
     }
   });
@@ -149,5 +235,14 @@ function addHistoryItemFirebase(id, title, messages) {
   list.appendChild(item);
 }
 
-// Exponer para que app.js pueda llamar saveConversation
-window._laylaFirebase = { saveConversation, deleteConversation };
+// -------------------------------------------------------
+// Exponer funciones globales para app.js
+// -------------------------------------------------------
+window._laylaFirebase = {
+  saveConversation,
+  deleteConversation,
+  loginWithGoogle,
+  loginWithFacebook,
+  loginAsGuest,
+  logout
+};

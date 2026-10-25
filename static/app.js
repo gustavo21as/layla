@@ -129,10 +129,37 @@ function updateUserUI() {
   document.getElementById("sidebarName").innerText = currentUser.name;
   document.getElementById("sidebarAvatar").innerText = currentUser.avatar || currentUser.name.charAt(0).toUpperCase();
   document.getElementById("sidebarStatus").innerText = currentUser.is_creator ? "Fundador" : "Activo";
+  // Botón header
+  const headerBtn = document.getElementById("headerAuthBtn");
+  const isGuest = !currentUser.uid || currentUser.uid === "guest";
+  if (headerBtn) {
+    headerBtn.innerText = isGuest ? "Acceder" : currentUser.name.split(" ")[0];
+  }
 }
 
-function openAuthModal() { authModal.classList.add("active"); }
+function openAuthModal() {
+  // Si ya está logueado, mostrar opciones de cuenta
+  const isGuest = !currentUser.uid || currentUser.uid === "guest";
+  const loggedSection = document.getElementById("loggedSection");
+  const loginSection  = document.getElementById("loginSection");
+  if (loggedSection && loginSection) {
+    if (!isGuest) {
+      loggedSection.style.display = "block";
+      loginSection.style.display  = "none";
+      document.getElementById("loggedName").innerText  = currentUser.name;
+      document.getElementById("loggedEmail").innerText = currentUser.email || "";
+    } else {
+      loggedSection.style.display = "none";
+      loginSection.style.display  = "flex";
+    }
+  }
+  authModal.classList.add("active");
+}
 function closeAuthModal() { authModal.classList.remove("active"); }
+
+// Exponer para Firebase
+window._laylaCloseModal  = closeAuthModal;
+window._laylaUpdateUser  = (u) => { currentUser = u; updateUserUI(); };
 
 document.getElementById("headerAuthBtn").addEventListener("click", openAuthModal);
 document.getElementById("userProfileBtn").addEventListener("click", openAuthModal);
@@ -174,24 +201,24 @@ function setCustomVoice() {
   input.value = "";
 }
 
+// Login — delega a Firebase
 function loginSocial(provider) {
-  const name = prompt(`Nombre para continuar con ${provider}:`, "Usuario");
-  if (name && name.trim()) {
-    const isGerardo = name.toLowerCase().includes("gerardo");
-    currentUser = { name: isGerardo ? "Gerardo" : name.trim(), is_creator: isGerardo, avatar: name.trim().charAt(0).toUpperCase() };
+  if (!window._laylaFirebase) return;
+  if (provider === "Google")   window._laylaFirebase.loginWithGoogle();
+  if (provider === "Facebook") window._laylaFirebase.loginWithFacebook();
+  if (provider === "Twitter / X") window._laylaFirebase.loginWithGoogle(); // fallback Google
+}
+
+function loginGuest() {
+  if (window._laylaFirebase) {
+    window._laylaFirebase.loginAsGuest();
+  } else {
+    currentUser = { name: "Invitado", is_creator: false, avatar: "I", uid: "guest" };
     localStorage.setItem("layla_user", JSON.stringify(currentUser));
     updateUserUI();
     closeAuthModal();
   }
 }
-
-function loginGuest() {
-  currentUser = { name: "Invitado", is_creator: false, avatar: "I" };
-  localStorage.setItem("layla_user", JSON.stringify(currentUser));
-  updateUserUI();
-  closeAuthModal();
-}
-
 // -------------------------------------------------------
 // SIDEBAR
 // -------------------------------------------------------
@@ -461,15 +488,24 @@ function playElevenLabsTTS(text) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: clean, voice_id: activeVoiceId })
       });
-      if (!res.ok) throw new Error("TTS error");
+      if (res.status === 503) {
+        // ElevenLabs no disponible — usar voz del navegador
+        console.warn("ElevenLabs no disponible, usando voz del navegador");
+        return fallbackTTS(clean).then(resolve);
+      }
+      if (!res.ok) throw new Error("TTS HTTP " + res.status);
       const blob = await res.blob();
+      if (blob.size < 100) throw new Error("Audio vacío");
       const audioUrl = URL.createObjectURL(blob);
       audioPlayer.src = audioUrl;
-      audioPlayer.onplay = () => { isAudioPlaying = true; };
-      audioPlayer.onended = () => { isAudioPlaying = false; resolve(); };
+      audioPlayer.onplay  = () => { isAudioPlaying = true; };
+      audioPlayer.onended = () => { isAudioPlaying = false; URL.revokeObjectURL(audioUrl); resolve(); };
       audioPlayer.onerror = () => { isAudioPlaying = false; fallbackTTS(clean).then(resolve); };
-      audioPlayer.play().catch(() => fallbackTTS(clean).then(resolve));
-    } catch (e) { fallbackTTS(clean).then(resolve); }
+      await audioPlayer.play().catch(() => fallbackTTS(clean).then(resolve));
+    } catch (e) {
+      console.warn("TTS error:", e.message);
+      fallbackTTS(clean).then(resolve);
+    }
   });
 }
 

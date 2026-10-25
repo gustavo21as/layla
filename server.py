@@ -139,10 +139,18 @@ def call_gemini(message, history, user_name, is_creator, emotion, image_data=Non
 
 def call_elevenlabs_tts(text, voice_id=None):
     clean_text = re.sub(r'\[IMAGE_PROMPT:.*?\]', '', text).strip()
+    clean_text = clean_text[:600]
+    if not clean_text:
+        return None
+
     vid = voice_id if voice_id else ELEVENLABS_VOICE_ID
+    if not ELEVENLABS_API_KEY:
+        print("ElevenLabs: API key no configurada")
+        return None
+
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{vid}"
     payload = {
-        "text": clean_text[:600],
+        "text": clean_text,
         "model_id": "eleven_multilingual_v2",
         "voice_settings": {
             "stability": 0.5,
@@ -160,8 +168,14 @@ def call_elevenlabs_tts(text, voice_id=None):
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=25) as resp:
-            return resp.read()
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            audio = resp.read()
+            print(f"ElevenLabs OK: {len(audio)} bytes, voice={vid}")
+            return audio
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="ignore")
+        print(f"ElevenLabs HTTP {e.code}: {body[:300]}")
+        return None
     except Exception as e:
         print(f"ElevenLabs error: {str(e)}")
         return None
@@ -276,9 +290,11 @@ class LaylaHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(audio_bytes)
             else:
-                self.send_response(500)
+                # Devolver 503 para que el frontend active el fallback de navegador
+                self.send_response(503)
+                self.send_header("Content-Type", "application/json")
                 self.end_headers()
-                self.wfile.write(b"TTS fallback")
+                self.wfile.write(json.dumps({"error": "TTS no disponible", "fallback": True}).encode())
             return
 
         elif self.path == "/api/set-voice":
