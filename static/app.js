@@ -459,7 +459,7 @@ function playElevenLabsTTS(text) {
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: clean })
+        body: JSON.stringify({ text: clean, voice_id: activeVoiceId })
       });
       if (!res.ok) throw new Error("TTS error");
       const blob = await res.blob();

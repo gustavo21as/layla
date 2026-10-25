@@ -137,9 +137,10 @@ def call_gemini(message, history, user_name, is_creator, emotion, image_data=Non
         print(f"Gemini SDK Error: {str(e)}")
         return f"Error al procesar con Layla: {str(e)}"
 
-def call_elevenlabs_tts(text):
+def call_elevenlabs_tts(text, voice_id=None):
     clean_text = re.sub(r'\[IMAGE_PROMPT:.*?\]', '', text).strip()
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
+    vid = voice_id if voice_id else ELEVENLABS_VOICE_ID
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{vid}"
     payload = {
         "text": clean_text[:600],
         "model_id": "eleven_multilingual_v2",
@@ -162,6 +163,7 @@ def call_elevenlabs_tts(text):
         with urllib.request.urlopen(req, timeout=25) as resp:
             return resp.read()
     except Exception as e:
+        print(f"ElevenLabs error: {str(e)}")
         return None
 
 class LaylaHandler(BaseHTTPRequestHandler):
@@ -260,12 +262,13 @@ class LaylaHandler(BaseHTTPRequestHandler):
 
         elif self.path == "/api/tts":
             text = body.get("text", "")
+            voice_id = body.get("voice_id", "").strip() or None
             if not text:
                 self.send_response(400)
                 self.end_headers()
                 return
 
-            audio_bytes = call_elevenlabs_tts(text)
+            audio_bytes = call_elevenlabs_tts(text, voice_id=voice_id)
             if audio_bytes:
                 self.send_response(200)
                 self.send_header("Content-Type", "audio/mpeg")
