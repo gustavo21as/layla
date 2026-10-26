@@ -7,7 +7,8 @@ import {
   GoogleAuthProvider,
   FacebookAuthProvider,
   TwitterAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -39,11 +40,36 @@ const auth = getAuth(app);
 const db   = getFirestore(app);
 
 // -------------------------------------------------------
-// AUTH — estado persistente
+// Manejar resultado del redirect al volver
+// -------------------------------------------------------
+getRedirectResult(auth).then((result) => {
+  if (result && result.user) {
+    const user = result.user;
+    const name = user.displayName || user.email || "Usuario";
+    const isGerardo = name.toLowerCase().includes("gerardo") ||
+                      (user.email || "").toLowerCase().includes("gerardo");
+    const newUser = {
+      name: isGerardo ? "Gerardo" : name,
+      is_creator: isGerardo,
+      avatar: name.charAt(0).toUpperCase(),
+      uid: user.uid,
+      email: user.email || "",
+      photo: user.photoURL || null
+    };
+    localStorage.setItem("layla_user", JSON.stringify(newUser));
+    if (window._laylaUpdateUser) window._laylaUpdateUser(newUser);
+    if (window._laylaCloseModal)  window._laylaCloseModal();
+    loadUserConversations(user.uid);
+  }
+}).catch((e) => {
+  console.error("Redirect result error:", e);
+});
+
+// -------------------------------------------------------
+// AUTH STATE — persistencia
 // -------------------------------------------------------
 onAuthStateChanged(auth, (firebaseUser) => {
   if (firebaseUser) {
-    // Usuario autenticado con Google/Facebook — actualizar UI
     const name = firebaseUser.displayName || firebaseUser.email || "Usuario";
     const isGerardo = name.toLowerCase().includes("gerardo") ||
                       (firebaseUser.email || "").toLowerCase().includes("gerardo");
@@ -57,10 +83,9 @@ onAuthStateChanged(auth, (firebaseUser) => {
     };
     localStorage.setItem("layla_user", JSON.stringify(newUser));
     if (window._laylaUpdateUser) window._laylaUpdateUser(newUser);
-    if (window._laylaCloseModal) window._laylaCloseModal();
+    if (window._laylaCloseModal)  window._laylaCloseModal();
     loadUserConversations(firebaseUser.uid);
   }
-  // Si NO hay usuario logueado, NO hacer nada — dejar que use la app normalmente
 });
 
 // -------------------------------------------------------
@@ -68,14 +93,22 @@ onAuthStateChanged(auth, (firebaseUser) => {
 // -------------------------------------------------------
 async function loginWithGoogle() {
   try {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-    // onAuthStateChanged se encarga del resto
+    await signInWithRedirect(auth, new GoogleAuthProvider());
   } catch (e) {
     console.error("Google login error:", e);
-    if (e.code !== "auth/popup-closed-by-user") {
-      alert("Error al iniciar con Google: " + e.message);
-    }
+    alert("Error Google: " + e.message);
+  }
+}
+
+// -------------------------------------------------------
+// LOGIN CON FACEBOOK
+// -------------------------------------------------------
+async function loginWithFacebook() {
+  try {
+    await signInWithRedirect(auth, new FacebookAuthProvider());
+  } catch (e) {
+    console.error("Facebook login error:", e);
+    alert("Error Facebook: " + e.message);
   }
 }
 
@@ -84,44 +117,28 @@ async function loginWithGoogle() {
 // -------------------------------------------------------
 async function loginWithTwitter() {
   try {
-    const provider = new TwitterAuthProvider();
-    await signInWithPopup(auth, provider);
+    await signInWithRedirect(auth, new TwitterAuthProvider());
   } catch (e) {
     console.error("Twitter login error:", e);
-    if (e.code !== "auth/popup-closed-by-user") {
-      alert("Error al iniciar con X: " + e.message);
-    }
-  }
-}
-async function loginWithFacebook() {
-  try {
-    const provider = new FacebookAuthProvider();
-    await signInWithPopup(auth, provider);
-  } catch (e) {
-    console.error("Facebook login error:", e);
-    if (e.code !== "auth/popup-closed-by-user") {
-      alert("Error al iniciar con Facebook: " + e.message);
-    }
+    alert("Error Twitter: " + e.message);
   }
 }
 
 // -------------------------------------------------------
-// LOGIN COMO INVITADO — persiste en localStorage
+// LOGIN COMO INVITADO
 // -------------------------------------------------------
 function loginAsGuest() {
   const guest = { name: "Invitado", is_creator: false, avatar: "I", uid: "guest" };
   localStorage.setItem("layla_user", JSON.stringify(guest));
   if (window._laylaUpdateUser) window._laylaUpdateUser(guest);
-  if (window._laylaCloseModal) window._laylaCloseModal();
+  if (window._laylaCloseModal)  window._laylaCloseModal();
 }
 
 // -------------------------------------------------------
 // CERRAR SESIÓN
 // -------------------------------------------------------
 async function logout() {
-  try {
-    await signOut(auth);
-  } catch(e) {}
+  try { await signOut(auth); } catch(e) {}
   const guest = { name: "Invitado", is_creator: false, avatar: "I", uid: "guest" };
   localStorage.setItem("layla_user", JSON.stringify(guest));
   if (window._laylaUpdateUser) window._laylaUpdateUser(guest);
@@ -134,20 +151,17 @@ async function saveConversation(title, messages) {
   try {
     const uid = auth.currentUser?.uid || "guest";
     const docRef = await addDoc(collection(db, "conversations"), {
-      title,
-      messages,
-      uid,
-      createdAt: serverTimestamp()
+      title, messages, uid, createdAt: serverTimestamp()
     });
     return docRef.id;
   } catch (e) {
-    console.error("Error guardando conversación:", e);
+    console.error("Error guardando:", e);
     return null;
   }
 }
 
 // -------------------------------------------------------
-// FIRESTORE — cargar conversaciones del usuario actual
+// FIRESTORE — cargar conversaciones
 // -------------------------------------------------------
 async function loadUserConversations(uid) {
   try {
@@ -160,11 +174,9 @@ async function loadUserConversations(uid) {
     const list = document.getElementById("historyList");
     if (!list) return;
     list.innerHTML = "";
-    snapshot.forEach(d => {
-      addHistoryItemFirebase(d.id, d.data().title, d.data().messages);
-    });
+    snapshot.forEach(d => addHistoryItemFirebase(d.id, d.data().title, d.data().messages));
   } catch (e) {
-    console.error("Error cargando conversaciones:", e);
+    console.error("Error cargando:", e);
   }
 }
 
@@ -175,34 +187,31 @@ async function deleteConversation(id) {
   try {
     await deleteDoc(doc(db, "conversations", id));
     return true;
-  } catch (e) {
-    return false;
-  }
+  } catch (e) { return false; }
 }
 
 // -------------------------------------------------------
-// SIDEBAR — agregar item de historial
+// SIDEBAR — item historial
 // -------------------------------------------------------
 function addHistoryItemFirebase(id, title, messages) {
   const list = document.getElementById("historyList");
   if (!list) return;
-
   const item = document.createElement("div");
   item.className = "history-item";
-  item.dataset.fbId = id;
   item.innerText = title || "Conversación";
 
   let pressTimer = null;
   item.addEventListener("touchstart", () => {
     pressTimer = setTimeout(() => {
-      if (confirm(`¿Eliminar?\n"${title}"`)) {
-        deleteConversation(id).then(ok => { if (ok) item.remove(); });
-      }
+      if (confirm(`¿Eliminar?\n"${title}"`)) deleteConversation(id).then(ok => { if (ok) item.remove(); });
     }, 600);
   });
   item.addEventListener("touchend",  () => clearTimeout(pressTimer));
   item.addEventListener("touchmove", () => clearTimeout(pressTimer));
-
+  item.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    if (confirm(`¿Eliminar?\n"${title}"`)) deleteConversation(id).then(ok => { if (ok) item.remove(); });
+  });
   item.addEventListener("click", () => {
     if (!messages?.length) return;
     const feed = document.getElementById("messagesFeed");
@@ -238,19 +247,11 @@ function addHistoryItemFirebase(id, title, messages) {
     });
     document.getElementById("chatStream").scrollTop = 99999;
   });
-
-  item.addEventListener("contextmenu", (e) => {
-    e.preventDefault();
-    if (confirm(`¿Eliminar?\n"${title}"`)) {
-      deleteConversation(id).then(ok => { if (ok) item.remove(); });
-    }
-  });
-
   list.appendChild(item);
 }
 
 // -------------------------------------------------------
-// Exponer funciones globales para app.js
+// Exponer para app.js
 // -------------------------------------------------------
 window._laylaFirebase = {
   saveConversation,
