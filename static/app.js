@@ -129,11 +129,19 @@ function updateUserUI() {
   document.getElementById("sidebarName").innerText = currentUser.name;
   document.getElementById("sidebarAvatar").innerText = currentUser.avatar || currentUser.name.charAt(0).toUpperCase();
   document.getElementById("sidebarStatus").innerText = currentUser.is_creator ? "Fundador" : "Activo";
-  // Botón header
   const headerBtn = document.getElementById("headerAuthBtn");
   const isGuest = !currentUser.uid || currentUser.uid === "guest";
   if (headerBtn) {
-    headerBtn.innerText = isGuest ? "Acceder" : currentUser.name.split(" ")[0];
+    if (isGuest) {
+      headerBtn.innerText = "Acceder";
+      headerBtn.style.background = "var(--emotion-color)";
+      headerBtn.style.color = "#050a14";
+    } else {
+      headerBtn.innerText = "⚙️";
+      headerBtn.style.background = "var(--bg-card)";
+      headerBtn.style.color = "var(--text-main)";
+      headerBtn.style.border = "1px solid var(--border-light)";
+    }
   }
 }
 
@@ -223,10 +231,14 @@ function loginGuest() {
 // SIDEBAR
 // -------------------------------------------------------
 toggleSidebarBtn.addEventListener("click", () => {
-  sidebar.classList.toggle("collapsed");
-  sidebar.classList.toggle("mobile-open");
-  const overlay = document.getElementById("sidebarOverlay");
-  if (overlay) overlay.classList.toggle("active", sidebar.classList.contains("mobile-open"));
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    sidebar.classList.toggle("mobile-open");
+    const overlay = document.getElementById("sidebarOverlay");
+    if (overlay) overlay.classList.toggle("active", sidebar.classList.contains("mobile-open"));
+  } else {
+    sidebar.classList.toggle("collapsed");
+  }
 });
 
 newChatBtn.addEventListener("click", () => {
