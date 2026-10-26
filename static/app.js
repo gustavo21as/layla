@@ -211,9 +211,13 @@ function setCustomVoice() {
 
 // Login — delega a Firebase
 function loginSocial(provider) {
-  if (!window._laylaFirebase) return;
-  if (provider === "Google")     window._laylaFirebase.loginWithGoogle();
-  if (provider === "Facebook")   window._laylaFirebase.loginWithFacebook();
+  if (!window._laylaFirebase) {
+    // Firebase aún cargando, esperar 1 segundo y reintentar
+    setTimeout(() => loginSocial(provider), 1000);
+    return;
+  }
+  if (provider === "Google")      window._laylaFirebase.loginWithGoogle();
+  if (provider === "Facebook")    window._laylaFirebase.loginWithFacebook();
   if (provider === "Twitter / X") window._laylaFirebase.loginWithTwitter();
 }
 
