@@ -1,8 +1,5 @@
-// =======================================================
-// LAYLA AI 4.1 QUANTUM - CONTROLLER
-// =======================================================
+// LAYLA AI 4.1 - CONTROLLER
 
-// Variables globales
 let currentUser = JSON.parse(localStorage.getItem("layla_user") || '{"name":"Gerardo","is_creator":true,"avatar":"G","uid":"gerardo"}');
 let currentEmotion = localStorage.getItem("layla_emotion") || "professional";
 let currentTheme = localStorage.getItem("layla_theme") || "dark";
@@ -18,13 +15,11 @@ let secretTapCount = 0;
 let secretTapTimer = null;
 let isVoiceLiveMuted = false;
 let voiceRec = null;
-
 const ELEVEN_API_KEY = "f9ebfddc7848d727dc872fdf0a76f0058cbd91628e0f271cd7d7ab0e337f0424";
 
-// =======================================================
-// INIT — esperar DOM
-// =======================================================
-document.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", init);
+
+function init() {
   applyTheme(currentTheme);
   applyEmotion(currentEmotion);
   updateVoiceToggleUI();
@@ -35,11 +30,18 @@ document.addEventListener("DOMContentLoaded", () => {
   setupAttachMenu();
   setupSwipeSidebar();
   setupVoiceLive();
-});
 
-// =======================================================
+  document.getElementById("themeToggleBtn").addEventListener("click", () => applyTheme(currentTheme === "dark" ? "light" : "dark"));
+  document.getElementById("waveToggleBtn").addEventListener("click", toggleVoice);
+  document.getElementById("userProfileBtn").addEventListener("click", openAuthModal);
+  document.getElementById("toggleSidebarBtn").addEventListener("click", toggleSidebar);
+  document.getElementById("newChatBtn").addEventListener("click", newChat);
+  document.getElementById("sendBtn").addEventListener("click", sendMessage);
+  document.getElementById("secretVoiceBtn").addEventListener("click", handleSecretTap);
+  document.querySelectorAll(".pill-emotion").forEach(p => p.addEventListener("click", () => applyEmotion(p.dataset.emotion)));
+}
+
 // TEMA
-// =======================================================
 function applyTheme(theme) {
   currentTheme = theme;
   document.body.classList.toggle("theme-dark", theme === "dark");
@@ -49,100 +51,56 @@ function applyTheme(theme) {
   localStorage.setItem("layla_theme", theme);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("themeToggleBtn").addEventListener("click", () => {
-    applyTheme(currentTheme === "dark" ? "light" : "dark");
-  });
-});
-
-// =======================================================
-// EMOCIÓN
-// =======================================================
+// EMOCION
 function applyEmotion(emotion) {
   currentEmotion = emotion;
   [...document.body.classList].filter(c => c.startsWith("emotion-")).forEach(c => document.body.classList.remove(c));
-  document.body.classList.add(`emotion-${emotion}`);
+  document.body.classList.add("emotion-" + emotion);
   document.querySelectorAll(".pill-emotion").forEach(p => p.classList.toggle("active", p.dataset.emotion === emotion));
   localStorage.setItem("layla_emotion", emotion);
-  const statusMap = {
-    professional: "Modo Profesional", loving: "Modo Amorosa", philosopher: "Modo Filósofa",
-    funny: "Modo Chistosa", toxic: "Modo Sin Filtros", advisor: "Modo Consejera", dramatic: "Modo Dramática"
-  };
-  const wst = document.getElementById("waveStatusText");
-  if (wst) wst.innerText = statusMap[emotion] || "Layla activa";
+  const map = { professional:"Modo Profesional", loving:"Modo Amorosa", philosopher:"Modo Filósofa", funny:"Modo Chistosa", toxic:"Modo Sin Filtros", advisor:"Modo Consejera", dramatic:"Modo Dramática" };
+  const el = document.getElementById("waveStatusText");
+  if (el) el.innerText = map[emotion] || "Layla activa";
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll(".pill-emotion").forEach(pill => {
-    pill.addEventListener("click", () => applyEmotion(pill.dataset.emotion));
-  });
-});
-
-// =======================================================
 // VOZ TOGGLE
-// =======================================================
+function toggleVoice() {
+  isVoiceActive = !isVoiceActive;
+  localStorage.setItem("layla_voice_active", isVoiceActive);
+  updateVoiceToggleUI();
+  if (!isVoiceActive) { document.getElementById("audioPlayer").pause(); if (window.speechSynthesis) window.speechSynthesis.cancel(); }
+}
+
 function updateVoiceToggleUI() {
   const btn = document.getElementById("waveToggleBtn");
   const bar = document.getElementById("soundwaveBar");
-  if (btn) {
-    btn.classList.toggle("active", isVoiceActive);
-    const lbl = btn.querySelector(".wave-label");
-    if (lbl) lbl.innerText = isVoiceActive ? "Voz Activa" : "Silencio";
-  }
+  if (btn) { btn.classList.toggle("active", isVoiceActive); const l = btn.querySelector(".wave-label"); if (l) l.innerText = isVoiceActive ? "Voz Activa" : "Silencio"; }
   if (bar) bar.classList.toggle("hidden", !isVoiceActive);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("waveToggleBtn").addEventListener("click", () => {
-    isVoiceActive = !isVoiceActive;
-    localStorage.setItem("layla_voice_active", isVoiceActive);
-    updateVoiceToggleUI();
-    if (!isVoiceActive) {
-      document.getElementById("audioPlayer").pause();
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
-    }
-  });
-});
-
-// =======================================================
 // USUARIO
-// =======================================================
 function updateUserUI() {
-  const sn = document.getElementById("sidebarName");
-  const sa = document.getElementById("sidebarAvatar");
-  const ss = document.getElementById("sidebarStatus");
-  const hb = document.getElementById("headerAuthBtn");
-  if (sn) sn.innerText = currentUser.name;
-  if (sa) sa.innerText = currentUser.avatar || currentUser.name.charAt(0).toUpperCase();
-  if (ss) ss.innerText = currentUser.is_creator ? "Fundador" : "Activo";
   const isGuest = !currentUser.uid || currentUser.uid === "guest";
+  const sn = document.getElementById("sidebarName"); if (sn) sn.innerText = currentUser.name;
+  const sa = document.getElementById("sidebarAvatar"); if (sa) sa.innerText = currentUser.avatar || currentUser.name[0].toUpperCase();
+  const ss = document.getElementById("sidebarStatus"); if (ss) ss.innerText = currentUser.is_creator ? "Fundador" : "Activo";
+  const hb = document.getElementById("headerAuthBtn");
   if (hb) {
-    if (isGuest) {
-      hb.innerText = "Acceder";
-      hb.style.cssText = "background:var(--emotion-color);color:#050a14;";
-    } else {
-      hb.innerText = "⚙️";
-      hb.style.cssText = "background:var(--bg-card);color:var(--text-main);border:1px solid var(--border-light);";
-    }
+    if (isGuest) { hb.innerText = "Acceder"; hb.style.cssText = "background:var(--emotion-color);color:#050a14;position:relative;z-index:100;"; }
+    else { hb.innerText = "⚙️"; hb.style.cssText = "background:var(--bg-card);color:var(--text-main);border:1px solid var(--border-light);position:relative;z-index:100;"; }
   }
 }
 
-// =======================================================
-// MODAL LOGIN
-// =======================================================
+// MODAL
 function openAuthModal() {
   const modal = document.getElementById("authModal");
   if (!modal) return;
   const isGuest = !currentUser.uid || currentUser.uid === "guest";
-  const ls = document.getElementById("loggedSection");
-  const li = document.getElementById("loginSection");
-  if (ls) ls.style.display = isGuest ? "none" : "block";
-  if (li) li.style.display = isGuest ? "flex" : "none";
+  const ls = document.getElementById("loggedSection"); if (ls) ls.style.display = isGuest ? "none" : "block";
+  const li = document.getElementById("loginSection"); if (li) li.style.display = isGuest ? "flex" : "none";
   if (!isGuest) {
-    const ln = document.getElementById("loggedName");
-    const le = document.getElementById("loggedEmail");
-    if (ln) ln.innerText = currentUser.name;
-    if (le) le.innerText = currentUser.email || "";
+    const ln = document.getElementById("loggedName"); if (ln) ln.innerText = currentUser.name;
+    const le = document.getElementById("loggedEmail"); if (le) le.innerText = currentUser.email || "";
   }
   modal.classList.add("active");
 }
@@ -152,238 +110,158 @@ function closeAuthModal() {
   if (modal) modal.classList.remove("active");
 }
 
-// Exponer para Firebase
 window._laylaCloseModal = closeAuthModal;
 window._laylaUpdateUser = (u) => { currentUser = u; updateUserUI(); };
 
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("userProfileBtn").addEventListener("click", openAuthModal);
-});
-
-// =======================================================
-// PANEL SECRETO VOZ
-// =======================================================
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("secretVoiceBtn").addEventListener("click", () => {
-    secretTapCount++;
-    if (secretTapTimer) clearTimeout(secretTapTimer);
-    secretTapTimer = setTimeout(() => { secretTapCount = 0; }, 600);
-    if (secretTapCount >= 2) {
-      secretTapCount = 0;
-      const panel = document.getElementById("secretVoicePanel");
-      if (panel) panel.style.display = panel.style.display === "none" ? "block" : "none";
-      const label = document.getElementById("voiceActiveLabel");
-      if (label) label.innerText = "Voz activa: " + activeVoiceId;
-    }
-  });
-});
+// PANEL VOZ SECRETO
+function handleSecretTap() {
+  secretTapCount++;
+  if (secretTapTimer) clearTimeout(secretTapTimer);
+  secretTapTimer = setTimeout(() => { secretTapCount = 0; }, 600);
+  if (secretTapCount >= 2) {
+    secretTapCount = 0;
+    const p = document.getElementById("secretVoicePanel");
+    if (p) p.style.display = p.style.display === "none" ? "block" : "none";
+    const l = document.getElementById("voiceActiveLabel");
+    if (l) l.innerText = "Voz activa: " + activeVoiceId;
+  }
+}
 
 function setVoice(voiceId, btn) {
   activeVoiceId = voiceId;
   localStorage.setItem("layla_voice_id", voiceId);
-  fetch("/api/set-voice", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ voice_id: voiceId }) }).catch(() => {});
+  fetch("/api/set-voice", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({voice_id:voiceId}) }).catch(()=>{});
   document.querySelectorAll(".voice-opt-btn").forEach(b => b.classList.remove("active"));
   if (btn) btn.classList.add("active");
-  const label = document.getElementById("voiceActiveLabel");
-  if (label) label.innerText = "Voz activa: " + activeVoiceId;
-  alert("✅ Voz cambiada a: " + voiceId);
+  const l = document.getElementById("voiceActiveLabel"); if (l) l.innerText = "Voz activa: " + voiceId;
+  alert("✅ Voz cambiada.");
 }
 
 function setCustomVoice() {
-  const input = document.getElementById("customVoiceInput");
-  if (!input || !input.value.trim()) return;
-  setVoice(input.value.trim(), null);
-  input.value = "";
+  const i = document.getElementById("customVoiceInput");
+  if (!i || !i.value.trim()) return;
+  setVoice(i.value.trim(), null);
+  i.value = "";
 }
 
-// =======================================================
 // LOGIN
-// =======================================================
 function loginSocial(provider) {
   if (window._laylaFirebase) {
-    if (provider === "Google")      { window._laylaFirebase.loginWithGoogle(); return; }
-    if (provider === "Facebook")    { window._laylaFirebase.loginWithFacebook(); return; }
+    if (provider === "Google") { window._laylaFirebase.loginWithGoogle(); return; }
+    if (provider === "Facebook") { window._laylaFirebase.loginWithFacebook(); return; }
     if (provider === "Twitter / X") { window._laylaFirebase.loginWithTwitter(); return; }
   }
-  // Fallback simple
   const name = prompt("¿Cómo te llamas?");
   if (!name || !name.trim()) return;
-  const isGerardo = name.toLowerCase().includes("gerardo");
-  currentUser = { name: isGerardo ? "Gerardo" : name.trim(), is_creator: isGerardo, avatar: name.trim().charAt(0).toUpperCase(), uid: "u_" + Date.now() };
+  const isG = name.toLowerCase().includes("gerardo");
+  currentUser = { name: isG ? "Gerardo" : name.trim(), is_creator: isG, avatar: name.trim()[0].toUpperCase(), uid: "u_" + Date.now() };
   localStorage.setItem("layla_user", JSON.stringify(currentUser));
   updateUserUI();
   closeAuthModal();
 }
 
 function loginGuest() {
-  currentUser = { name: "Invitado", is_creator: false, avatar: "I", uid: "guest" };
+  currentUser = { name:"Invitado", is_creator:false, avatar:"I", uid:"guest" };
   localStorage.setItem("layla_user", JSON.stringify(currentUser));
   updateUserUI();
   closeAuthModal();
 }
 
-// Logout
-document.addEventListener("DOMContentLoaded", () => {
-  const logoutBtn = document.querySelector(".logout-btn");
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      if (window._laylaFirebase) window._laylaFirebase.logout();
-      loginGuest();
-    });
-  }
-});
-
-// =======================================================
 // SIDEBAR
-// =======================================================
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("toggleSidebarBtn").addEventListener("click", () => {
-    const sidebar = document.getElementById("sidebar");
-    const isMobile = window.innerWidth <= 768;
-    if (isMobile) {
-      sidebar.classList.toggle("mobile-open");
-      const overlay = document.getElementById("sidebarOverlay");
-      if (overlay) overlay.classList.toggle("active", sidebar.classList.contains("mobile-open"));
-    } else {
-      sidebar.classList.toggle("collapsed");
-    }
-  });
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  if (window.innerWidth <= 768) {
+    sidebar.classList.toggle("mobile-open");
+    const ov = document.getElementById("sidebarOverlay");
+    if (ov) ov.classList.toggle("active", sidebar.classList.contains("mobile-open"));
+  } else {
+    sidebar.classList.toggle("collapsed");
+  }
+}
 
-  document.getElementById("newChatBtn").addEventListener("click", () => {
-    conversationHistory = [];
-    currentSessionTitle = null;
-    document.getElementById("messagesFeed").innerHTML = "";
-    document.getElementById("heroWelcome").style.display = "flex";
-    document.getElementById("userInput").value = "";
-    document.getElementById("userInput").focus();
-    closeSidebar();
-  });
-});
+function newChat() {
+  conversationHistory = []; currentSessionTitle = null;
+  document.getElementById("messagesFeed").innerHTML = "";
+  document.getElementById("heroWelcome").style.display = "flex";
+  document.getElementById("userInput").value = "";
+  document.getElementById("userInput").focus();
+  closeSidebar();
+}
 
 function closeSidebar() {
   if (window.innerWidth <= 768) {
-    const sidebar = document.getElementById("sidebar");
-    sidebar.classList.remove("mobile-open");
-    const overlay = document.getElementById("sidebarOverlay");
-    if (overlay) overlay.classList.remove("active");
+    document.getElementById("sidebar").classList.remove("mobile-open");
+    const ov = document.getElementById("sidebarOverlay"); if (ov) ov.classList.remove("active");
   }
 }
 
 function setupSwipeSidebar() {
-  let overlay = document.getElementById("sidebarOverlay");
-  if (!overlay) {
-    overlay = document.createElement("div");
-    overlay.id = "sidebarOverlay";
-    overlay.className = "sidebar-overlay";
-    document.body.appendChild(overlay);
-  }
-  overlay.addEventListener("click", closeSidebar);
-
-  let touchStartX = 0, touchStartY = 0;
-  document.addEventListener("touchstart", (e) => {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-  }, { passive: true });
-
-  document.addEventListener("touchend", (e) => {
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+  let ov = document.getElementById("sidebarOverlay");
+  if (!ov) { ov = document.createElement("div"); ov.id = "sidebarOverlay"; ov.className = "sidebar-overlay"; document.body.appendChild(ov); }
+  ov.addEventListener("click", closeSidebar);
+  let tx = 0, ty = 0;
+  document.addEventListener("touchstart", e => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive:true });
+  document.addEventListener("touchend", e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    const dy = Math.abs(e.changedTouches[0].clientY - ty);
     if (dy > 60) return;
-    const sidebar = document.getElementById("sidebar");
-    if (dx > 60 && touchStartX < 30) {
-      sidebar.classList.add("mobile-open");
-      overlay.classList.add("active");
-    } else if (dx < -60 && sidebar.classList.contains("mobile-open")) {
-      closeSidebar();
-    }
-  }, { passive: true });
+    const sb = document.getElementById("sidebar");
+    if (dx > 60 && tx < 30) { sb.classList.add("mobile-open"); ov.classList.add("active"); }
+    else if (dx < -60 && sb.classList.contains("mobile-open")) closeSidebar();
+  }, { passive:true });
 }
 
-function quickAsk(text) {
-  document.getElementById("userInput").value = text;
-  sendMessage();
-}
+function quickAsk(text) { document.getElementById("userInput").value = text; sendMessage(); }
 
 function setupTextarea() {
-  const input = document.getElementById("userInput");
-  input.addEventListener("input", () => {
-    input.style.height = "auto";
-    input.style.height = Math.min(input.scrollHeight, 180) + "px";
-  });
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  });
+  const inp = document.getElementById("userInput");
+  inp.addEventListener("input", () => { inp.style.height = "auto"; inp.style.height = Math.min(inp.scrollHeight, 180) + "px"; });
+  inp.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
 }
 
-// =======================================================
 // SOUNDWAVES
-// =======================================================
 function initSoundwaves() {
   const canvas = document.getElementById("liveWaveCanvas");
   if (!canvas) return;
-  const wCtx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d");
   function render() {
-    wCtx.clearRect(0, 0, canvas.width, canvas.height);
-    const waveColor = getComputedStyle(document.body).getPropertyValue("--emotion-color").trim() || "#00d2ff";
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const color = getComputedStyle(document.body).getPropertyValue("--emotion-color").trim() || "#00d2ff";
     const midY = canvas.height / 2;
-    const amplitude = isAudioPlaying ? 14 : 3.5;
-    const speed = isAudioPlaying ? 0.12 : 0.03;
-    wavePhase += speed;
-    wCtx.lineWidth = 2.5;
-    wCtx.strokeStyle = waveColor;
-    wCtx.shadowBlur = 10;
-    wCtx.shadowColor = waveColor;
-    wCtx.beginPath();
+    const amp = isAudioPlaying ? 14 : 3.5;
+    wavePhase += isAudioPlaying ? 0.12 : 0.03;
+    ctx.lineWidth = 2.5; ctx.strokeStyle = color; ctx.shadowBlur = 10; ctx.shadowColor = color;
+    ctx.beginPath();
     for (let x = 0; x < canvas.width; x++) {
-      const y = midY + Math.sin(x * 0.04 + wavePhase) * amplitude * Math.sin(x * 0.01);
-      if (x === 0) wCtx.moveTo(x, y); else wCtx.lineTo(x, y);
+      const y = midY + Math.sin(x * 0.04 + wavePhase) * amp * Math.sin(x * 0.01);
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
-    wCtx.stroke();
+    ctx.stroke();
     requestAnimationFrame(render);
   }
   render();
 }
 
-// =======================================================
 // ADJUNTOS
-// =======================================================
 function setupAttachMenu() {
-  const attachBtn = document.getElementById("attachBtn");
-  const attachMenu = document.getElementById("attachMenu");
-  const photoInput = document.getElementById("photoInput");
-  const cameraInput = document.getElementById("cameraInput");
-  const fileInput = document.getElementById("fileInput");
-
-  attachBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    attachMenu.classList.toggle("open");
-    attachBtn.classList.toggle("open");
-  });
-  document.addEventListener("click", () => {
-    attachMenu.classList.remove("open");
-    attachBtn.classList.remove("open");
-  });
-  attachMenu.addEventListener("click", (e) => e.stopPropagation());
-  document.getElementById("cameraBtn").addEventListener("click", () => { cameraInput.click(); attachMenu.classList.remove("open"); });
-  document.getElementById("uploadPhotoBtn").addEventListener("click", () => { photoInput.click(); attachMenu.classList.remove("open"); });
-  document.getElementById("fileBtn").addEventListener("click", () => { fileInput.click(); attachMenu.classList.remove("open"); });
-  photoInput.addEventListener("change", handlePhotoFile);
-  cameraInput.addEventListener("change", handlePhotoFile);
-  fileInput.addEventListener("change", handlePhotoFile);
+  const ab = document.getElementById("attachBtn");
+  const am = document.getElementById("attachMenu");
+  ab.addEventListener("click", e => { e.stopPropagation(); am.classList.toggle("open"); ab.classList.toggle("open"); });
+  document.addEventListener("click", () => { am.classList.remove("open"); ab.classList.remove("open"); });
+  am.addEventListener("click", e => e.stopPropagation());
+  document.getElementById("cameraBtn").addEventListener("click", () => { document.getElementById("cameraInput").click(); am.classList.remove("open"); });
+  document.getElementById("uploadPhotoBtn").addEventListener("click", () => { document.getElementById("photoInput").click(); am.classList.remove("open"); });
+  document.getElementById("fileBtn").addEventListener("click", () => { document.getElementById("fileInput").click(); am.classList.remove("open"); });
+  ["photoInput","cameraInput","fileInput"].forEach(id => document.getElementById(id).addEventListener("change", handlePhotoFile));
   document.getElementById("removePhotoBtn").addEventListener("click", clearAttachedPhoto);
 }
 
 function handlePhotoFile(e) {
-  const file = e.target.files[0];
-  if (!file) return;
+  const file = e.target.files[0]; if (!file) return;
   currentPhotoMime = file.type || "image/jpeg";
   document.getElementById("photoFileName").innerText = file.name;
   const reader = new FileReader();
-  reader.onload = (ev) => {
-    currentPhotoBase64 = ev.target.result;
-    document.getElementById("photoPreviewImg").src = currentPhotoBase64;
-    document.getElementById("photoPreviewBox").style.display = "flex";
-  };
+  reader.onload = ev => { currentPhotoBase64 = ev.target.result; document.getElementById("photoPreviewImg").src = currentPhotoBase64; document.getElementById("photoPreviewBox").style.display = "flex"; };
   reader.readAsDataURL(file);
 }
 
@@ -394,340 +272,212 @@ function clearAttachedPhoto() {
   ["photoInput","cameraInput","fileInput"].forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
 }
 
-// =======================================================
-// ENVIAR MENSAJE
-// =======================================================
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("sendBtn").addEventListener("click", sendMessage);
-});
-
+// CHAT
 async function sendMessage() {
-  const userInput = document.getElementById("userInput");
-  const heroWelcome = document.getElementById("heroWelcome");
-  const chatStream = document.getElementById("chatStream");
-  const text = userInput.value.trim();
-  const photoToSend = currentPhotoBase64;
-  const mimeToSend = currentPhotoMime;
-  if (!text && !photoToSend) return;
-
-  userInput.value = "";
-  userInput.style.height = "auto";
-  heroWelcome.style.display = "none";
-
-  appendUserMessage(text || "Analiza esta foto", photoToSend);
-  conversationHistory.push({ role: "user", text: text || "[Foto adjunta]" });
+  const inp = document.getElementById("userInput");
+  const text = inp.value.trim();
+  const photo = currentPhotoBase64;
+  const mime = currentPhotoMime;
+  if (!text && !photo) return;
+  inp.value = ""; inp.style.height = "auto";
+  document.getElementById("heroWelcome").style.display = "none";
+  appendUserMessage(text || "Analiza esta foto", photo);
+  conversationHistory.push({ role:"user", text: text || "[Foto]" });
   clearAttachedPhoto();
-
-  const placeholderId = appendThinkingPlaceholder();
-  chatStream.scrollTop = chatStream.scrollHeight;
-
+  const pid = appendThinkingPlaceholder();
+  const cs = document.getElementById("chatStream"); cs.scrollTop = cs.scrollHeight;
   try {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text, history: conversationHistory, user: currentUser, emotion: currentEmotion, image_data: photoToSend, image_mime: mimeToSend })
-    });
-    if (!res.ok) throw new Error(`Error ${res.status}`);
+    const res = await fetch("/api/chat", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ message:text, history:conversationHistory, user:currentUser, emotion:currentEmotion, image_data:photo, image_mime:mime }) });
+    if (!res.ok) throw new Error("Error " + res.status);
     const data = await res.json();
-    removeThinkingPlaceholder(placeholderId);
+    removeThinkingPlaceholder(pid);
     appendAssistantMessage(data.reply, data.image_url);
-    conversationHistory.push({ role: "model", text: data.reply });
+    conversationHistory.push({ role:"model", text:data.reply });
     if (isVoiceActive) playElevenLabsTTS(data.reply);
     updateSessionHistory(text || "Consulta con foto");
-    if (window._laylaFirebase && conversationHistory.length >= 2) {
-      window._laylaFirebase.saveConversation(currentSessionTitle || "Conversación", conversationHistory);
-    }
-  } catch (err) {
-    removeThinkingPlaceholder(placeholderId);
-    appendAssistantMessage(`Error: ${err.message}`);
-  }
-  chatStream.scrollTop = chatStream.scrollHeight;
+    if (window._laylaFirebase && conversationHistory.length >= 2) window._laylaFirebase.saveConversation(currentSessionTitle || "Conversación", conversationHistory);
+  } catch (err) { removeThinkingPlaceholder(pid); appendAssistantMessage("Error: " + err.message); }
+  cs.scrollTop = cs.scrollHeight;
 }
 
-function updateSessionHistory(firstText) {
+function updateSessionHistory(txt) {
   if (currentSessionTitle !== null) return;
-  currentSessionTitle = firstText.length > 26 ? firstText.substring(0, 26) + "..." : firstText;
+  currentSessionTitle = txt.length > 26 ? txt.substring(0, 26) + "..." : txt;
   const list = document.getElementById("historyList");
   const item = document.createElement("div");
-  item.className = "history-item";
-  item.innerText = currentSessionTitle;
-  let pressTimer = null;
-  item.addEventListener("touchstart", () => {
-    pressTimer = setTimeout(() => {
-      if (confirm(`¿Eliminar?\n"${currentSessionTitle}"`)) {
-        item.remove(); conversationHistory = []; currentSessionTitle = null;
-        document.getElementById("messagesFeed").innerHTML = "";
-        document.getElementById("heroWelcome").style.display = "flex";
-      }
-    }, 600);
-  });
-  item.addEventListener("touchend", () => clearTimeout(pressTimer));
-  item.addEventListener("touchmove", () => clearTimeout(pressTimer));
-  item.addEventListener("contextmenu", (e) => {
-    e.preventDefault();
-    if (confirm(`¿Eliminar?\n"${currentSessionTitle}"`)) {
-      item.remove(); conversationHistory = []; currentSessionTitle = null;
-      document.getElementById("messagesFeed").innerHTML = "";
-      document.getElementById("heroWelcome").style.display = "flex";
-    }
-  });
+  item.className = "history-item"; item.innerText = currentSessionTitle;
+  let pt = null;
+  item.addEventListener("touchstart", () => { pt = setTimeout(() => { if (confirm("¿Eliminar?")) { item.remove(); conversationHistory=[]; currentSessionTitle=null; document.getElementById("messagesFeed").innerHTML=""; document.getElementById("heroWelcome").style.display="flex"; } }, 600); });
+  item.addEventListener("touchend", () => clearTimeout(pt));
+  item.addEventListener("touchmove", () => clearTimeout(pt));
+  item.addEventListener("contextmenu", e => { e.preventDefault(); if (confirm("¿Eliminar?")) { item.remove(); conversationHistory=[]; currentSessionTitle=null; document.getElementById("messagesFeed").innerHTML=""; document.getElementById("heroWelcome").style.display="flex"; } });
   list.prepend(item);
 }
 
-// =======================================================
-// TTS ELEVENLABS — directo al API
-// =======================================================
+// TTS
 function playElevenLabsTTS(text) {
-  return new Promise(async (resolve) => {
+  return new Promise(async resolve => {
     if (!isVoiceActive) return resolve();
-    const clean = text.replace(/\[IMAGE_PROMPT:.*?\]/g, '').replace(/[*_#`]/g, '').trim();
+    const clean = text.replace(/\[IMAGE_PROMPT:.*?\]/g,'').replace(/[*_#`]/g,'').trim();
     if (!clean) return resolve();
     try {
-      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${activeVoiceId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "xi-api-key": ELEVEN_API_KEY },
-        body: JSON.stringify({ text: clean.substring(0, 500), model_id: "eleven_multilingual_v2", voice_settings: { stability: 0.5, similarity_boost: 0.85 } })
+      const res = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" + activeVoiceId, {
+        method:"POST", headers:{"Content-Type":"application/json","xi-api-key":ELEVEN_API_KEY},
+        body:JSON.stringify({ text:clean.substring(0,500), model_id:"eleven_multilingual_v2", voice_settings:{stability:0.5,similarity_boost:0.85} })
       });
       if (!res.ok) return fallbackTTS(clean).then(resolve);
       const blob = await res.blob();
       if (blob.size < 100) return fallbackTTS(clean).then(resolve);
-      const audioPlayer = document.getElementById("audioPlayer");
-      const audioUrl = URL.createObjectURL(blob);
-      audioPlayer.src = audioUrl;
-      audioPlayer.onplay = () => { isAudioPlaying = true; };
-      audioPlayer.onended = () => { isAudioPlaying = false; URL.revokeObjectURL(audioUrl); resolve(); };
-      audioPlayer.onerror = () => { isAudioPlaying = false; fallbackTTS(clean).then(resolve); };
-      await audioPlayer.play().catch(() => fallbackTTS(clean).then(resolve));
-    } catch (e) { fallbackTTS(clean).then(resolve); }
+      const ap = document.getElementById("audioPlayer");
+      const url = URL.createObjectURL(blob);
+      ap.src = url;
+      ap.onplay = () => { isAudioPlaying = true; };
+      ap.onended = () => { isAudioPlaying = false; URL.revokeObjectURL(url); resolve(); };
+      ap.onerror = () => { isAudioPlaying = false; fallbackTTS(clean).then(resolve); };
+      await ap.play().catch(() => fallbackTTS(clean).then(resolve));
+    } catch(e) { fallbackTTS(clean).then(resolve); }
   });
 }
 
 function fallbackTTS(text) {
-  return new Promise((resolve) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utt = new SpeechSynthesisUtterance(text);
-      utt.lang = "es-PE";
-      utt.onstart = () => { isAudioPlaying = true; };
-      utt.onend = () => { isAudioPlaying = false; resolve(); };
-      utt.onerror = () => { isAudioPlaying = false; resolve(); };
-      window.speechSynthesis.speak(utt);
-    } else resolve();
+  return new Promise(resolve => {
+    if (!window.speechSynthesis) return resolve();
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang = "es-PE";
+    utt.onstart = () => { isAudioPlaying = true; };
+    utt.onend = () => { isAudioPlaying = false; resolve(); };
+    utt.onerror = () => { isAudioPlaying = false; resolve(); };
+    window.speechSynthesis.speak(utt);
   });
 }
 
-// =======================================================
 // MENSAJES
-// =======================================================
-function appendUserMessage(text, photoUrl = null) {
+function appendUserMessage(text, photo=null) {
   const feed = document.getElementById("messagesFeed");
-  const row = document.createElement("div");
-  row.className = "msg-row user";
-  const bubble = document.createElement("div");
-  bubble.className = "user-bubble";
-  if (photoUrl) { const img = document.createElement("img"); img.src = photoUrl; img.className = "user-attached-img"; bubble.appendChild(img); }
-  if (text) { const txt = document.createElement("div"); txt.innerText = text; bubble.appendChild(txt); }
-  row.appendChild(bubble);
-  feed.appendChild(row);
+  const row = document.createElement("div"); row.className = "msg-row user";
+  const bubble = document.createElement("div"); bubble.className = "user-bubble";
+  if (photo) { const img = document.createElement("img"); img.src = photo; img.className = "user-attached-img"; bubble.appendChild(img); }
+  if (text) { const t = document.createElement("div"); t.innerText = text; bubble.appendChild(t); }
+  row.appendChild(bubble); feed.appendChild(row);
 }
 
-function appendAssistantMessage(text, imageUrl = null) {
+function appendAssistantMessage(text, imageUrl=null) {
   const feed = document.getElementById("messagesFeed");
-  const row = document.createElement("div");
-  row.className = "msg-row assistant";
-  const orb = document.createElement("div");
-  orb.className = "assistant-orb";
-  orb.innerText = "L";
-  const wrapper = document.createElement("div");
-  wrapper.className = "msg-content-wrapper";
-  const textEl = document.createElement("div");
-  textEl.className = "assistant-text";
-  textEl.innerText = text;
-  wrapper.appendChild(textEl);
-  const actions = document.createElement("div");
-  actions.className = "msg-actions";
-  const copyChip = document.createElement("button");
-  copyChip.className = "action-chip";
-  copyChip.innerHTML = "📋 Copiar";
-  copyChip.onclick = () => { navigator.clipboard.writeText(text); copyChip.innerHTML = "✓ Copiado"; setTimeout(() => { copyChip.innerHTML = "📋 Copiar"; }, 2000); };
-  const speakChip = document.createElement("button");
-  speakChip.className = "action-chip";
-  speakChip.innerHTML = "🔊 Escuchar";
-  speakChip.onclick = () => playElevenLabsTTS(text);
-  actions.appendChild(copyChip);
-  actions.appendChild(speakChip);
-  wrapper.appendChild(actions);
+  const row = document.createElement("div"); row.className = "msg-row assistant";
+  const orb = document.createElement("div"); orb.className = "assistant-orb"; orb.innerText = "L";
+  const wrap = document.createElement("div"); wrap.className = "msg-content-wrapper";
+  const tel = document.createElement("div"); tel.className = "assistant-text"; tel.innerText = text;
+  wrap.appendChild(tel);
+  const acts = document.createElement("div"); acts.className = "msg-actions";
+  const cc = document.createElement("button"); cc.className = "action-chip"; cc.innerHTML = "📋 Copiar";
+  cc.onclick = () => { navigator.clipboard.writeText(text); cc.innerHTML = "✓ Copiado"; setTimeout(()=>{ cc.innerHTML="📋 Copiar"; },2000); };
+  const sc = document.createElement("button"); sc.className = "action-chip"; sc.innerHTML = "🔊 Escuchar";
+  sc.onclick = () => playElevenLabsTTS(text);
+  acts.appendChild(cc); acts.appendChild(sc); wrap.appendChild(acts);
   if (imageUrl) {
-    const imgCard = document.createElement("div");
-    imgCard.className = "chat-4d-card";
-    imgCard.innerHTML = `<div class="inner-4d-card" onclick="openImageModal('${imageUrl}')"><img src="${imageUrl}" alt="Imagen generada" loading="lazy"></div>`;
-    wrapper.appendChild(imgCard);
+    const card = document.createElement("div"); card.className = "chat-4d-card";
+    card.innerHTML = `<div class="inner-4d-card" onclick="openImageModal('${imageUrl}')"><img src="${imageUrl}" alt="Imagen" loading="lazy"></div>`;
+    wrap.appendChild(card);
   }
-  row.appendChild(orb);
-  row.appendChild(wrapper);
-  feed.appendChild(row);
+  row.appendChild(orb); row.appendChild(wrap); feed.appendChild(row);
 }
 
 function appendThinkingPlaceholder() {
   const feed = document.getElementById("messagesFeed");
   const id = "ph-" + Date.now();
-  const row = document.createElement("div");
-  row.className = "msg-row assistant";
-  row.id = id;
-  const orb = document.createElement("div");
-  orb.className = "assistant-orb";
-  orb.innerText = "L";
-  const wrapper = document.createElement("div");
-  wrapper.className = "msg-content-wrapper";
-  const textEl = document.createElement("div");
-  textEl.className = "assistant-text";
-  textEl.style.color = "var(--text-dim)";
-  textEl.innerText = "Layla procesando...";
-  wrapper.appendChild(textEl);
-  row.appendChild(orb);
-  row.appendChild(wrapper);
-  feed.appendChild(row);
+  const row = document.createElement("div"); row.className = "msg-row assistant"; row.id = id;
+  const orb = document.createElement("div"); orb.className = "assistant-orb"; orb.innerText = "L";
+  const wrap = document.createElement("div"); wrap.className = "msg-content-wrapper";
+  const tel = document.createElement("div"); tel.className = "assistant-text"; tel.style.color = "var(--text-dim)"; tel.innerText = "Layla procesando...";
+  wrap.appendChild(tel); row.appendChild(orb); row.appendChild(wrap); feed.appendChild(row);
   return id;
 }
 
-function removeThinkingPlaceholder(id) {
-  const el = document.getElementById(id);
-  if (el) el.remove();
-}
+function removeThinkingPlaceholder(id) { const el = document.getElementById(id); if (el) el.remove(); }
 
-// =======================================================
 // IMAGEN MODAL
-// =======================================================
 function setup4DParallax() {
-  const card = document.getElementById("modal4DCard");
-  if (!card) return;
-  card.addEventListener("mousemove", (e) => {
-    const rect = card.getBoundingClientRect();
-    const rotX = (((e.clientY - rect.top) / rect.height) - 0.5) * -24;
-    const rotY = (((e.clientX - rect.left) / rect.width) - 0.5) * 24;
-    card.style.transform = `perspective(1000px) rotateX(${rotX}deg) rotateY(${rotY}deg) scale(1.03)`;
+  const card = document.getElementById("modal4DCard"); if (!card) return;
+  card.addEventListener("mousemove", e => {
+    const r = card.getBoundingClientRect();
+    const rx = (((e.clientY-r.top)/r.height)-0.5)*-24;
+    const ry = (((e.clientX-r.left)/r.width)-0.5)*24;
+    card.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg) scale(1.03)`;
   });
   card.addEventListener("mouseleave", () => { card.style.transform = "perspective(1000px) rotateX(0) rotateY(0) scale(1)"; });
 }
 
 function openImageModal(url) {
-  const modalImg = document.getElementById("modalImg");
-  const downloadImgBtn = document.getElementById("downloadImgBtn");
-  const imageModal = document.getElementById("imageModal");
-  if (modalImg) modalImg.src = url;
-  if (downloadImgBtn) downloadImgBtn.href = url;
-  if (imageModal) imageModal.classList.add("active");
+  const mi = document.getElementById("modalImg"); if (mi) mi.src = url;
+  const dl = document.getElementById("downloadImgBtn"); if (dl) dl.href = url;
+  const im = document.getElementById("imageModal"); if (im) im.classList.add("active");
 }
 
-function closeImageModal() {
-  const imageModal = document.getElementById("imageModal");
-  if (imageModal) imageModal.classList.remove("active");
-}
+function closeImageModal() { const im = document.getElementById("imageModal"); if (im) im.classList.remove("active"); }
 
-// =======================================================
-// MODO VOZ EN VIVO
-// =======================================================
+// VOZ EN VIVO
 function setupVoiceLive() {
-  const micBtn = document.getElementById("micBtn");
-  const voiceLiveScreen = document.getElementById("voiceLiveScreen");
-  const voiceLiveClose = document.getElementById("voiceLiveClose");
-  const voiceOrbBtn = document.getElementById("voiceOrbBtn");
-  const voiceLiveMute = document.getElementById("voiceLiveMute");
-
-  micBtn.addEventListener("click", () => {
-    voiceLiveScreen.classList.add("active");
+  document.getElementById("micBtn").addEventListener("click", () => {
+    document.getElementById("voiceLiveScreen").classList.add("active");
     setOrbState("idle");
     document.getElementById("voiceLiveTranscript").innerText = "";
   });
 
-  voiceLiveClose.addEventListener("click", () => {
-    voiceLiveScreen.classList.remove("active");
+  document.getElementById("voiceLiveClose").addEventListener("click", () => {
+    document.getElementById("voiceLiveScreen").classList.remove("active");
     if (voiceRec) { try { voiceRec.stop(); } catch(e) {} }
     document.getElementById("audioPlayer").pause();
     if (window.speechSynthesis) window.speechSynthesis.cancel();
-    isAudioPlaying = false;
-    setOrbState("idle");
+    isAudioPlaying = false; setOrbState("idle");
   });
 
-  voiceOrbBtn.addEventListener("click", async () => {
-    if (voiceOrbBtn.classList.contains("listening")) {
-      if (voiceRec) { try { voiceRec.stop(); } catch(e) {} }
-      voiceOrbBtn.classList.remove("listening");
-      setOrbState("idle");
-      return;
-    }
-    if (isAudioPlaying) {
-      document.getElementById("audioPlayer").pause();
-      if (window.speechSynthesis) window.speechSynthesis.cancel();
-      isAudioPlaying = false;
-      setOrbState("idle");
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(t => t.stop());
-    } catch (e) {
-      setOrbState("idle");
-      document.getElementById("voiceLiveStatus").innerText = "⚠️ Permite el micrófono";
-      return;
-    }
-    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
-      document.getElementById("voiceLiveStatus").innerText = "⚠️ Usa Chrome para voz";
-      return;
-    }
-    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    voiceRec = new SpeechRec();
-    voiceRec.lang = "es-PE";
-    voiceRec.continuous = false;
-    voiceRec.interimResults = true;
-    voiceRec.onstart = () => { voiceOrbBtn.classList.add("listening"); setOrbState("listening"); document.getElementById("voiceLiveTranscript").innerText = ""; };
-    voiceRec.onresult = (e) => {
-      let final = "", interim = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) final += e.results[i][0].transcript;
-        else interim += e.results[i][0].transcript;
-      }
-      document.getElementById("voiceLiveTranscript").innerText = final || interim;
+  document.getElementById("voiceOrbBtn").addEventListener("click", async () => {
+    const btn = document.getElementById("voiceOrbBtn");
+    if (btn.classList.contains("listening")) { if (voiceRec) { try { voiceRec.stop(); } catch(e) {} } btn.classList.remove("listening"); setOrbState("idle"); return; }
+    if (isAudioPlaying) { document.getElementById("audioPlayer").pause(); if (window.speechSynthesis) window.speechSynthesis.cancel(); isAudioPlaying = false; setOrbState("idle"); return; }
+    try { const s = await navigator.mediaDevices.getUserMedia({audio:true}); s.getTracks().forEach(t=>t.stop()); } catch(e) { document.getElementById("voiceLiveStatus").innerText = "⚠️ Permite el micrófono"; return; }
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) { document.getElementById("voiceLiveStatus").innerText = "⚠️ Usa Chrome"; return; }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    voiceRec = new SR(); voiceRec.lang = "es-PE"; voiceRec.continuous = false; voiceRec.interimResults = true;
+    voiceRec.onstart = () => { btn.classList.add("listening"); setOrbState("listening"); document.getElementById("voiceLiveTranscript").innerText = ""; };
+    voiceRec.onresult = e => {
+      let f="",i="";
+      for (let x=e.resultIndex;x<e.results.length;x++) { if (e.results[x].isFinal) f+=e.results[x][0].transcript; else i+=e.results[x][0].transcript; }
+      document.getElementById("voiceLiveTranscript").innerText = f||i;
     };
     voiceRec.onend = async () => {
-      voiceOrbBtn.classList.remove("listening");
-      const transcript = document.getElementById("voiceLiveTranscript").innerText.trim();
-      if (!transcript) { setOrbState("idle"); document.getElementById("voiceLiveStatus").innerText = "No escuché nada."; return; }
+      btn.classList.remove("listening");
+      const t = document.getElementById("voiceLiveTranscript").innerText.trim();
+      if (!t) { setOrbState("idle"); document.getElementById("voiceLiveStatus").innerText = "No escuché nada."; return; }
       setOrbState("thinking");
       try {
-        const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: transcript, history: conversationHistory, user: currentUser, emotion: currentEmotion }) });
+        const res = await fetch("/api/chat", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({message:t,history:conversationHistory,user:currentUser,emotion:currentEmotion}) });
         const data = await res.json();
-        conversationHistory.push({ role: "user", text: transcript });
-        conversationHistory.push({ role: "model", text: data.reply });
-        updateSessionHistory(transcript);
-        document.getElementById("voiceLiveTranscript").innerText = data.reply.length > 200 ? data.reply.substring(0, 200) + "..." : data.reply;
-        appendUserMessage(transcript);
-        appendAssistantMessage(data.reply, data.image_url);
+        conversationHistory.push({role:"user",text:t}); conversationHistory.push({role:"model",text:data.reply});
+        updateSessionHistory(t);
+        document.getElementById("voiceLiveTranscript").innerText = data.reply.length>200?data.reply.substring(0,200)+"...":data.reply;
+        appendUserMessage(t); appendAssistantMessage(data.reply, data.image_url);
         document.getElementById("heroWelcome").style.display = "none";
         if (!isVoiceLiveMuted) { setOrbState("speaking"); await playElevenLabsTTS(data.reply); }
-        setOrbState("idle");
-        document.getElementById("voiceLiveTranscript").innerText = "";
-      } catch (err) { setOrbState("idle"); document.getElementById("voiceLiveStatus").innerText = "Error. Intenta de nuevo."; }
+        setOrbState("idle"); document.getElementById("voiceLiveTranscript").innerText = "";
+      } catch(err) { setOrbState("idle"); document.getElementById("voiceLiveStatus").innerText = "Error. Intenta de nuevo."; }
     };
-    voiceRec.onerror = (e) => {
-      voiceOrbBtn.classList.remove("listening");
-      setOrbState("idle");
-      document.getElementById("voiceLiveStatus").innerText = e.error === "no-speech" ? "No escuché nada." : "Error: " + e.error;
-    };
+    voiceRec.onerror = e => { btn.classList.remove("listening"); setOrbState("idle"); document.getElementById("voiceLiveStatus").innerText = e.error==="no-speech"?"No escuché nada.":"Error: "+e.error; };
     voiceRec.start();
   });
 
-  voiceLiveMute.addEventListener("click", () => {
+  document.getElementById("voiceLiveMute").addEventListener("click", () => {
     isVoiceLiveMuted = !isVoiceLiveMuted;
-    voiceLiveMute.innerText = isVoiceLiveMuted ? "🔇" : "🔊";
+    document.getElementById("voiceLiveMute").innerText = isVoiceLiveMuted ? "🔇" : "🔊";
     if (isVoiceLiveMuted) { document.getElementById("audioPlayer").pause(); if (window.speechSynthesis) window.speechSynthesis.cancel(); isAudioPlaying = false; }
   });
 }
 
 function setOrbState(state) {
-  const voiceOrb = document.getElementById("voiceOrb");
-  const voiceLiveStatus = document.getElementById("voiceLiveStatus");
-  if (voiceOrb) voiceOrb.className = "voice-orb " + state;
-  const map = { idle: "Toca el micrófono para hablar", listening: "Escuchando...", thinking: "Layla pensando...", speaking: "Layla hablando..." };
-  if (voiceLiveStatus) voiceLiveStatus.innerText = map[state] || "";
+  const orb = document.getElementById("voiceOrb");
+  const status = document.getElementById("voiceLiveStatus");
+  if (orb) orb.className = "voice-orb " + state;
+  const map = { idle:"Toca el micrófono para hablar", listening:"Escuchando...", thinking:"Layla pensando...", speaking:"Layla hablando..." };
+  if (status) status.innerText = map[state] || "";
 }
