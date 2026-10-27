@@ -18,6 +18,10 @@ let voiceRec = null;
 const ELEVEN_API_KEY = "f9ebfddc7848d727dc872fdf0a76f0058cbd91628e0f271cd7d7ab0e337f0424";
 
 window.addEventListener("DOMContentLoaded", init);
+// Si DOM ya cargó, llamar init directo
+if (document.readyState === "complete" || document.readyState === "interactive") {
+  init();
+}
 
 function init() {
   applyTheme(currentTheme);
