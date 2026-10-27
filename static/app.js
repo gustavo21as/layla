@@ -146,19 +146,17 @@ function updateUserUI() {
 }
 
 function openAuthModal() {
-  // Si ya está logueado, mostrar opciones de cuenta
   const isGuest = !currentUser.uid || currentUser.uid === "guest";
   const loggedSection = document.getElementById("loggedSection");
   const loginSection  = document.getElementById("loginSection");
   if (loggedSection && loginSection) {
+    loggedSection.style.display = isGuest ? "none"  : "block";
+    loginSection.style.display  = isGuest ? "flex"  : "none";
     if (!isGuest) {
-      loggedSection.style.display = "block";
-      loginSection.style.display  = "none";
-      document.getElementById("loggedName").innerText  = currentUser.name;
-      document.getElementById("loggedEmail").innerText = currentUser.email || "";
-    } else {
-      loggedSection.style.display = "none";
-      loginSection.style.display  = "flex";
+      const n = document.getElementById("loggedName");
+      const e = document.getElementById("loggedEmail");
+      if (n) n.innerText = currentUser.name;
+      if (e) e.innerText = currentUser.email || "";
     }
   }
   authModal.classList.add("active");
