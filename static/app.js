@@ -163,11 +163,10 @@ function openAuthModal() {
 }
 function closeAuthModal() { authModal.classList.remove("active"); }
 
-// Exponer para Firebase
 window._laylaCloseModal  = closeAuthModal;
 window._laylaUpdateUser  = (u) => { currentUser = u; updateUserUI(); };
 
-document.getElementById("headerAuthBtn").addEventListener("click", openAuthModal);
+// userProfileBtn abre modal
 document.getElementById("userProfileBtn").addEventListener("click", openAuthModal);
 
 // Panel secreto de voz — doble tap en la L
