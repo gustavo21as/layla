@@ -209,27 +209,35 @@ function setCustomVoice() {
   input.value = "";
 }
 
-// Login — delega a Firebase
+// Login — delega a Firebase con fallback de nombre
 function loginSocial(provider) {
-  if (!window._laylaFirebase) {
-    // Firebase aún cargando, esperar 1 segundo y reintentar
-    setTimeout(() => loginSocial(provider), 1000);
-    return;
-  }
-  if (provider === "Google")      window._laylaFirebase.loginWithGoogle();
-  if (provider === "Facebook")    window._laylaFirebase.loginWithFacebook();
-  if (provider === "Twitter / X") window._laylaFirebase.loginWithTwitter();
-}
-
-function loginGuest() {
+  // Intentar con Firebase
   if (window._laylaFirebase) {
-    window._laylaFirebase.loginAsGuest();
-  } else {
-    currentUser = { name: "Invitado", is_creator: false, avatar: "I", uid: "guest" };
+    if (provider === "Google")      { window._laylaFirebase.loginWithGoogle(); return; }
+    if (provider === "Facebook")    { window._laylaFirebase.loginWithFacebook(); return; }
+    if (provider === "Twitter / X") { window._laylaFirebase.loginWithTwitter(); return; }
+  }
+  // Fallback — pedir nombre manualmente
+  const name = prompt(`¿Cómo te llamas? (${provider})`);
+  if (name && name.trim()) {
+    const isGerardo = name.toLowerCase().includes("gerardo");
+    currentUser = {
+      name: isGerardo ? "Gerardo" : name.trim(),
+      is_creator: isGerardo,
+      avatar: name.trim().charAt(0).toUpperCase(),
+      uid: "manual_" + Date.now()
+    };
     localStorage.setItem("layla_user", JSON.stringify(currentUser));
     updateUserUI();
     closeAuthModal();
   }
+}
+
+function loginGuest() {
+  currentUser = { name: "Invitado", is_creator: false, avatar: "I", uid: "guest" };
+  localStorage.setItem("layla_user", JSON.stringify(currentUser));
+  updateUserUI();
+  closeAuthModal();
 }
 // -------------------------------------------------------
 // SIDEBAR
